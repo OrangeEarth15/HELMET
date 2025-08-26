@@ -11,6 +11,13 @@ logger.setLevel(logging.INFO)
 
 
 def parse_arguments():
+    """
+    解析命令行参数和配置文件，设置默认值和参数验证。
+    
+    1. 定义参数
+    2. 从配置文件加载默认值
+    3. 解析参数并返回
+    """
     parser = argparse.ArgumentParser(description="evaluation on downstream tasks")
     parser.add_argument("--config", type=str, default=None, help="path to config file")
     parser.add_argument("--tag", type=str, default="eval", help="tag to add to the output file")
@@ -57,6 +64,16 @@ def parse_arguments():
     parser.add_argument("--use_chat_template", type=ast.literal_eval, choices=[True, False], default=False, help="whether to use chat template")
     parser.add_argument("--rope_theta", type=int, default=None, help="override rope theta")
     parser.add_argument("--thinking", action="store_true", help="for reasoning models (e.g., Deepseek-r1), when this is set, we allow the model to generate an additional 32k tokens and exclude all texts between <think>*</think> from the output for evaluation")
+
+    # fast prefill / sparse attention settings (xattn/flex/xflex/tattn)
+    parser.add_argument("--attn_metric", type=str, default=None, choices=["xattn", "flex", "xflex", "tattn", "full", "minfer", None], help="enable custom attention optimization; None disables")
+    parser.add_argument("--attn_stride", type=int, default=8, help="fused attention stride for xattn/xflex/tattn")
+    parser.add_argument("--attn_threshold", type=float, default=None, help="global threshold; None uses per-layer defaults")
+    parser.add_argument("--attn_gamma", type=float, default=0.9, help="gamma for flex")
+    parser.add_argument("--attn_tau", type=float, default=0.1, help="tau for flex")
+    parser.add_argument("--attn_score_ratio", type=float, default=0.9, help="score ratio for tattn/xflex")
+    parser.add_argument("--attn_global_mode", type=ast.literal_eval, choices=[True, False], default=False, help="global mode for tattn")
+    parser.add_argument("--attn_print_detail", type=ast.literal_eval, choices=[True, False], default=False, help="print detailed timing for custom attention")
 
     # misc
     parser.add_argument("--debug", action="store_true", help="for debugging")

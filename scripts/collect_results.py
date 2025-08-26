@@ -41,7 +41,8 @@ dataset_to_metrics = {
     
     "infbench_qa": ["rougeL_f1"],
     "infbench_choice": ["exact_match"],
-    "infbench_sum": ["gpt-4-f1"],
+    # "infbench_sum": ["gpt-4-f1"],
+    "infbench_sum_eng": ["gpt-4-f1"],
     
     "alce_asqa": ["str_em", "citation_rec", "citation_prec"],
     "alce_qampari": ["qampari_rec_top5", "citation_rec", "citation_prec"],
@@ -55,7 +56,8 @@ custom_avgs = {
     "Cite": ['alce_asqa str_em', 'alce_asqa citation_rec', 'alce_asqa citation_prec', 'alce_qampari qampari_rec_top5', 'alce_qampari citation_rec', 'alce_qampari citation_prec', ],
     "Re-rank": ['msmarco_rerank_psg NDCG@10', ],
     "LongQA": ['narrativeqa gpt-4-score', 'infbench_qa rougeL_f1', 'infbench_choice exact_match', ],
-    "Summ": ['infbench_sum gpt-4-f1', 'multi_lexsum gpt-4-f1', ],
+    # "Summ": ['infbench_sum gpt-4-f1', 'multi_lexsum gpt-4-f1', ],
+    "Summ": ['infbench_sum_eng gpt-4-f1', 'multi_lexsum gpt-4-f1', ],
     # "RULER": ['ruler_niah_s_1 ruler_recall', 'ruler_niah_s_2 ruler_recall', 'ruler_niah_s_3 ruler_recall', 'ruler_niah_mk_1 ruler_recall', 'ruler_niah_mk_2 ruler_recall', 'ruler_niah_mk_3 ruler_recall', 'ruler_niah_mq ruler_recall', 'ruler_niah_mv ruler_recall', 'ruler_cwe ruler_recall', 'ruler_fwe ruler_recall', 'ruler_vt ruler_recall', 'ruler_qa_1 substring_exact_match', 'ruler_qa_2 substring_exact_match'],
     "Ours": ['Recall', 'RAG', 'ICL', 'Cite', 'Re-rank', 'LongQA', 'Summ'],
 }
@@ -87,7 +89,56 @@ class arguments:
                 
     def get_path(self):
         tag = self.tag
-        path = os.path.join(self.output_dir, "{args.dataset}_{tag}_{args.test_name}_in{args.input_max_length}_size{args.max_test_samples}_shots{args.shots}_samp{args.do_sample}max{args.generation_max_length}min{args.generation_min_length}t{args.temperature}p{args.top_p}_chat{args.use_chat_template}_{args.seed}.json".format(args=self, tag=tag))
+        # path = os.path.join(self.output_dir, "{args.dataset}_{tag}_{args.test_name}_in{args.input_max_length}_size{args.max_test_samples}_shots{args.shots}_samp{args.do_sample}max{args.generation_max_length}min{args.generation_min_length}t{args.temperature}p{args.top_p}_chat{args.use_chat_template}_{args.seed}.json".format(args=self, tag=tag))
+        
+        # 根据数据集确定子目录
+        subdirs = {
+            "json_kv": "recall",
+            "ruler_niah": "recall", 
+            "nq": "rag",
+            "triviaqa": "rag", 
+            "hotpotqa": "rag",
+            "popqa": "rag",
+            "narrativeqa": "longqa",
+            "infbench_qa": "longqa",
+            "infbench_choice": "longqa",
+            "infbench_sum": "summ",
+            "multi_lexsum": "summ",
+            "msmarco_rerank": "rerank",
+            "trec": "icl",
+            "banking77": "icl",
+            "clinic150": "icl", 
+            "nlu": "icl",
+            "alce": "cite"
+        }
+        
+        # 确定子目录
+        subdir = None
+        for prefix, dir_name in subdirs.items():
+            if prefix in self.dataset:
+                subdir = dir_name
+                break
+        
+        if subdir is None:
+            # 如果找不到匹配的子目录，尝试根据数据集名称猜测
+            if "kv" in self.dataset or "ruler" in self.dataset:
+                subdir = "recall"
+            elif any(x in self.dataset for x in ["trec", "banking", "clinic", "nlu"]):
+                subdir = "icl"
+            elif any(x in self.dataset for x in ["qa", "narrativeqa", "infbench"]):
+                subdir = "longqa"
+            elif "sum" in self.dataset:
+                subdir = "summ"
+            elif "rerank" in self.dataset:
+                subdir = "rerank"
+            elif "alce" in self.dataset:
+                subdir = "cite"
+            else:
+                subdir = "rag"  # 默认
+        
+        filename = "{args.dataset}_{tag}_{args.test_name}_in{args.input_max_length}_size{args.max_test_samples}_shots{args.shots}_samp{args.do_sample}max{args.generation_max_length}min{args.generation_min_length}t{args.temperature}p{args.top_p}_chat{args.use_chat_template}_{args.seed}.json".format(args=self, tag=tag)
+        
+        path = os.path.join(self.output_dir, subdir, filename)
 
         if os.path.exists(path.replace(".json", "-gpt4eval_o.json")):
             return path.replace(".json", "-gpt4eval_o.json")
@@ -110,8 +161,16 @@ class arguments:
         if not os.path.exists(path):
             print("path doesn't exist")
             return None
-        with open(path) as f:
-            results = json.load(f)
+        
+        try:
+            with open(path) as f:
+                results = json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            return None
+        except Exception as e:
+            print(f"Error reading file: {e}")
+            return None
         
         _, metric = self.get_metric_name()
         if path.endswith(".score"):
@@ -252,13 +311,22 @@ if __name__ == "__main__":
     ]
 
     
+    # XAT attention结果配置
     models_configs = [
-            {"model": "Llama-3.1-8B", "use_chat_template": False, "training_length": 131072},
-            {"model": "Llama-3.1-8B-Instruct", "training_length": 131072},
-            {"model": "DeepSeek-R1-Distill-Llama-8B", "training_length": 131072, "do_sample": True, "temperature": 0.6},
-            {"model": "Qwen2-7B", "use_chat_template": False, "training_length": 32768},
-            {"model": "Qwen2-7B-Instruct", "training_length": 32768},
-            {"model": "DeepSeek-R1-Distill-Qwen-7B", "training_length": 131072, "do_sample": True, "temperature": 0.6},
+            # {"model": "Llama-3.1-8B", "use_chat_template": False, "training_length": 131072},
+            # {"model": "Llama-3.1-8B-Instruct", "training_length": 131072},
+            # {"model": "DeepSeek-R1-Distill-Llama-8B", "training_length": 131072, "do_sample": True, "temperature": 0.6},
+            # {"model": "Qwen2-7B", "use_chat_template": False, "training_length": 32768},
+            # {"model": "Qwen2-7B-Instruct", "training_length": 32768},
+            # {"model": "DeepSeek-R1-Distill-Qwen-7B", "training_length": 131072, "do_sample": True, "temperature": 0.6},
+            # 根据你的输出目录结构修改这里
+            {"model": "full_flashinfer", "use_chat_template": True, "training_length": 131072},
+            {"model": "xattn_threshold0.95", "use_chat_template": True, "training_length": 131072},
+            {"model": "xattn_threshold0.9", "use_chat_template": True, "training_length": 131072},
+            {"model": "flex_gamma0.95_tau0.1", "use_chat_template": True, "training_length": 131072},
+            {"model": "flex_gamma0.9_tau0.1", "use_chat_template": True, "training_length": 131072},
+            {"model": "xflex_threshold0.95_scoreratio0.95", "use_chat_template": True, "training_length": 131072},
+            {"model": "xflex_threshold0.95_scoreratio0.5", "use_chat_template": True, "training_length": 131072},
     ]
 
     # set your configs here, only include the ones that you ran
@@ -287,7 +355,8 @@ if __name__ == "__main__":
     df = []
     for model in tqdm(models_configs):
         args = arguments()
-        args.tag = "v1" # SET YOUR TAG HERE
+        # args.tag = "v1" # SET YOUR TAG HERE
+        args.tag = model['model']  # 使用模型名称作为tag，匹配输出目录
         args.output_dir = f"output/{model['model']}"
     
         for dataset in dataset_configs:

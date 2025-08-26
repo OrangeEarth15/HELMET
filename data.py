@@ -10,6 +10,15 @@ import datasets
 from datasets import load_dataset, load_from_disk
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
+# 添加ModelScope支持
+try:
+    from modelscope import AutoTokenizer as MSAutoTokenizer
+    USE_MODELSCOPE = True
+    print("✅ ModelScope available, will use for Llama-2 tokenizer")
+except ImportError:
+    from transformers import AutoTokenizer as MSAutoTokenizer
+    USE_MODELSCOPE = False
+    print("⚠️  ModelScope not available, fallback to transformers")
 
 import re
 from utils import calculate_metrics, parse_output, parse_rankings, calculate_retrieval_metrics
@@ -163,7 +172,8 @@ def truncate_llama2(dataset, data, postfix_text=" ... [the rest of the text is o
     # use the llama 2 tokenizer to truncate to max_length, which only applies to the main document (context) and exclude the instructions and the demos
     # this is to make sure that every model see the same amount of information
     max_length = int(dataset.split("_")[-1])
-    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    # tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    tokenizer = MSAutoTokenizer.from_pretrained("shakechen/Llama-2-7b-hf")
     separator_length = len(tokenizer(postfix_text)["input_ids"])
 
     def truncate(sample):
@@ -176,7 +186,8 @@ def truncate_llama2(dataset, data, postfix_text=" ... [the rest of the text is o
 
 
 def filter_length(data, min_length, key):
-    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    # tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    tokenizer = MSAutoTokenizer.from_pretrained("shakechen/Llama-2-7b-hf")
     data = data.filter(lambda x: len(tokenizer(x[key])['input_ids']) >= min_length, num_proc=32)
     return data
 
@@ -190,7 +201,8 @@ def load_narrativeqa(dataset, shots=0, max_samples=None, seed=42):
     data = all_data["test"].shuffle(seed=seed)
     
     # filter for a specific length
-    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    # tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
+    tokenizer = MSAutoTokenizer.from_pretrained("shakechen/Llama-2-7b-hf")
     data = data.map(lambda x: {'input_length': len(tokenizer(x['document']['text'])['input_ids'])})
     data = data.filter(lambda x: x['input_length'] > 131072) # this should yield 1330 samples
     data = data.remove_columns("input_length")

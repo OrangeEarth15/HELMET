@@ -173,3 +173,9 @@ slurm
 
 *.ipynb
 gty*
+
+.hf_cache/
+.torch_cache
+data/
+
+data.tar.gz

@@ -27,6 +27,13 @@ logger.setLevel(logging.INFO)
 
 
 def run_test(args, model, dataset, test_file, demo_file):
+    """
+    一个数据集的一次完整评测流程。
+    
+    1. 加载数据集
+    2. 加载模型
+    3. 生成输出
+    """
     logger.info(f"running test on {dataset} with test {test_file} and demo {demo_file}")
     # dataset specific changes tag
     tag = args.tag
@@ -181,6 +188,7 @@ def run_test(args, model, dataset, test_file, demo_file):
 
 
 def main():
+    """解析参数、加载模型，按多数据集循环调用 run_test，以及在 ALCE 数据集上触发附加评测。"""
     args = parse_arguments()
 
     logger.info(f"Arguments: {args}")
@@ -195,6 +203,7 @@ def main():
     assert len(test_files) == len(demo_files)
 
     args.input_max_length = max(max_lengths)
+    # 加载配置和模型
     model = load_LLM(args)
 
     for dataset, test_file, demo_file, max_length, gen_length in zip(datasets, test_files, demo_files, max_lengths, gen_lengths):

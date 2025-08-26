@@ -869,7 +869,7 @@ class HFModel(LLM):
             generation_max_length=generation_max_length,
             generation_min_length=generation_min_length,
             do_sample=do_sample,
-            stop_newline=stop_newline,
+            stop_new_line=stop_new_line,
             use_chat_template=use_chat_template,
             system_message=system_message,
         )
@@ -897,28 +897,53 @@ class HFModel(LLM):
         self.tokenizer.truncation_side = "left"
         self.tokenizer.padding_side = "left"
 
-        config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
-        if "rope_theta" in kwargs and kwargs["rope_theta"] is not None:
-            logger.info(f"Override rope theta to {kwargs['rope_theta']}")
-            config.rope_theta = kwargs["rope_theta"]
+        # integrate XAT custom attention for Llama models (hardcoded like XAT)
+        if kwargs.get("attn_metric", None) is not None and "llama" in model_name.lower():
+            import sys
+            # 添加 XAT 路径到 sys.path
+            xat_path = '/home/scratch.sarawang_ent/project/XAT'
+            if xat_path not in sys.path:
+                sys.path.insert(0, xat_path)
+            from xattn.src.load_llama import load_model, FastPrefillConfig
 
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            config=config,
-            torch_dtype=kwargs.get("torch_dtype", torch.bfloat16),
-            device_map="auto",
-            trust_remote_code=True,
-            **model_kwargs
-        )
-        if kwargs.get("torch_compile", True):
-            self.model = torch.compile(self.model)
-            # https://huggingface.co/docs/transformers/en/llm_optims?static-kv=basic+usage%3A+generation_config#static-kv-cache-and-torchcompile
-            # self.model.forward = torch.compile(self.model.forward, mode="reduce-overhead", fullgraph=True)
+            cfg = FastPrefillConfig(
+                threshold=kwargs.get("attn_threshold", None),
+                print_detail=kwargs.get("attn_print_detail", False),
+                stride=kwargs.get("attn_stride", 8),
+                metric=kwargs.get("attn_metric"),
+                gamma=kwargs.get("attn_gamma", 0.9),
+                tau=kwargs.get("attn_tau", 0.1),
+                score_ratio=kwargs.get("attn_score_ratio", 0.9),
+                global_mode=kwargs.get("attn_global_mode", False),
+            )
+            # use XAT's load_model instead of standard loading (like XAT model_wrappers.py)
+            logger.info(f"Loading {model_name} with XAT {kwargs.get('attn_metric')} attention")
+            self.model, _ = load_model(cfg, name_or_path=model_name)
+            logger.info(f"Applied {kwargs.get('attn_metric')} custom attention via XAT load_model")
+        else:
+            # standard model loading
+            config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+            if "rope_theta" in kwargs and kwargs["rope_theta"] is not None:
+                logger.info(f"Override rope theta to {kwargs['rope_theta']}")
+                config.rope_theta = kwargs["rope_theta"]
+
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                config=config,
+                torch_dtype=kwargs.get("torch_dtype", torch.bfloat16),
+                device_map="auto",
+                trust_remote_code=True,
+                **model_kwargs
+            )
+            if kwargs.get("torch_compile", True):
+                self.model = torch.compile(self.model)
+                # https://huggingface.co/docs/transformers/en/llm_optims?static-kv=basic+usage%3A+generation_config#static-kv-cache-and-torchcompile
+                # self.model.forward = torch.compile(self.model.forward, mode="reduce-overhead", fullgraph=True)
 
         # use the default if possible, append if necessary
         stop_token_ids = self.model.generation_config.eos_token_id
         stop_token_ids = [stop_token_ids] if not isinstance(stop_token_ids, list) else stop_token_ids
-        if stop_newline:
+        if stop_new_line:
             stop = list(set(["\n", "Ċ", "ĊĊ", "<0x0A>"]))
             stop_token_ids = list(set([self.tokenizer.convert_tokens_to_ids(stop_token) for stop_token in stop] + stop_token_ids))
             if "llama" in model_name.lower():
@@ -1280,12 +1305,25 @@ def load_LLM(args):
     else:
         model_cls = HFModel
         kwargs['seed'] = args.seed
-        if args.no_torch_compile:
+        # disable compile if requested or when custom attention is enabled
+        if args.no_torch_compile or (hasattr(args, 'attn_metric') and args.attn_metric is not None):
             kwargs["torch_compile"] = False
         if args.no_bf16:
             kwargs["torch_dtype"] = torch.float32
         if args.rope_theta is not None:
             kwargs["rope_theta"] = args.rope_theta
+        # pass custom attention args
+        if hasattr(args, 'attn_metric'):
+            kwargs.update({
+                "attn_metric": args.attn_metric,
+                "attn_stride": args.attn_stride,
+                "attn_threshold": args.attn_threshold,
+                "attn_gamma": args.attn_gamma,
+                "attn_tau": args.attn_tau,
+                "attn_score_ratio": args.attn_score_ratio,
+                "attn_global_mode": args.attn_global_mode,
+                "attn_print_detail": args.attn_print_detail,
+            })
 
     logger.info(f"Loading model {args.model_name_or_path} with {model_cls.__name__}")
     model = model_cls(
@@ -1296,7 +1334,7 @@ def load_LLM(args):
         generation_max_length=args.generation_max_length,
         generation_min_length=args.generation_min_length,
         do_sample=args.do_sample,
-        stop_newline=args.stop_newline,
+        stop_new_line=args.stop_new_line,
         use_chat_template=args.use_chat_template,
         system_message=args.system_message,
         **kwargs,
