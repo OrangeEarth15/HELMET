@@ -23,6 +23,32 @@ except ImportError:
 import re
 from utils import calculate_metrics, parse_output, parse_rankings, calculate_retrieval_metrics
 
+# 全局变量来存储当前模型的tokenizer路径
+_current_model_path = None
+
+def get_appropriate_tokenizer():
+    """根据当前使用的模型选择合适的tokenizer"""
+    global _current_model_path
+    
+    if _current_model_path and "qwen" in _current_model_path.lower():
+        try:
+            # 使用Qwen tokenizer
+            from transformers import AutoTokenizer
+            return AutoTokenizer.from_pretrained(_current_model_path)
+        except:
+            try:
+                return AutoTokenizer.from_pretrained("Qwen/Qwen2.5-7B-Instruct")
+            except:
+                pass
+    
+    # 默认使用Llama-2 tokenizer
+    return MSAutoTokenizer.from_pretrained("shakechen/Llama-2-7b-hf")
+
+def set_current_model_path(model_path):
+    """设置当前使用的模型路径"""
+    global _current_model_path
+    _current_model_path = model_path
+
 import logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S')
@@ -169,11 +195,10 @@ def load_json_kv(path, shots, max_test_samples=None, seed=42):
 
 
 def truncate_llama2(dataset, data, postfix_text=" ... [the rest of the text is omitted]"):
-    # use the llama 2 tokenizer to truncate to max_length, which only applies to the main document (context) and exclude the instructions and the demos
+    # use an appropriate tokenizer to truncate to max_length, which only applies to the main document (context) and exclude the instructions and the demos
     # this is to make sure that every model see the same amount of information
     max_length = int(dataset.split("_")[-1])
-    # tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
-    tokenizer = MSAutoTokenizer.from_pretrained("shakechen/Llama-2-7b-hf")
+    tokenizer = get_appropriate_tokenizer()
     separator_length = len(tokenizer(postfix_text)["input_ids"])
 
     def truncate(sample):
@@ -186,9 +211,8 @@ def truncate_llama2(dataset, data, postfix_text=" ... [the rest of the text is o
 
 
 def filter_length(data, min_length, key):
-    # tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
-    tokenizer = MSAutoTokenizer.from_pretrained("shakechen/Llama-2-7b-hf")
-    data = data.filter(lambda x: len(tokenizer(x[key])['input_ids']) >= min_length, num_proc=32)
+    tokenizer = get_appropriate_tokenizer()
+    data = data.filter(lambda x: len(tokenizer(x[key], truncation=True, max_length=200000)['input_ids']) >= min_length, num_proc=32)
     return data
 
 
@@ -201,8 +225,7 @@ def load_narrativeqa(dataset, shots=0, max_samples=None, seed=42):
     data = all_data["test"].shuffle(seed=seed)
     
     # filter for a specific length
-    # tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf")
-    tokenizer = MSAutoTokenizer.from_pretrained("shakechen/Llama-2-7b-hf")
+    tokenizer = get_appropriate_tokenizer()
     data = data.map(lambda x: {'input_length': len(tokenizer(x['document']['text'])['input_ids'])})
     data = data.filter(lambda x: x['input_length'] > 131072) # this should yield 1330 samples
     data = data.remove_columns("input_length")
@@ -674,6 +697,8 @@ def default_post_process(output, example):
 
 
 def load_data(args, dataset, path=None, demo_path=None):
+    # 设置当前模型路径以供tokenizer选择使用
+    set_current_model_path(args.model_name_or_path)
     if "popqa" in dataset:
         popularity_threshold = float(dataset.split("_")[-1])
         data = load_qa(dataset, path, demo_path, max_test_samples=args.max_test_samples, popularity_threshold=popularity_threshold, shots=args.shots)

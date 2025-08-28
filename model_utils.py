@@ -897,29 +897,51 @@ class HFModel(LLM):
         self.tokenizer.truncation_side = "left"
         self.tokenizer.padding_side = "left"
 
-        # integrate XAT custom attention for Llama models (hardcoded like XAT)
-        if kwargs.get("attn_metric", None) is not None and "llama" in model_name.lower():
+        # integrate XAT custom attention for Llama and Qwen models (hardcoded like XAT)
+        if kwargs.get("attn_metric", None) is not None and ("llama" in model_name.lower() or "qwen" in model_name.lower()):
             import sys
             # 添加 XAT 路径到 sys.path
             xat_path = '/home/scratch.sarawang_ent/project/XAT'
             if xat_path not in sys.path:
                 sys.path.insert(0, xat_path)
-            from xattn.src.load_llama import load_model, FastPrefillConfig
+            
+            cfg_params = {
+                "threshold": kwargs.get("attn_threshold", None),
+                "print_detail": kwargs.get("attn_print_detail", False),
+                "stride": kwargs.get("attn_stride", 8),
+                "metric": kwargs.get("attn_metric"),
+                "gamma": kwargs.get("attn_gamma", 0.9),
+                "tau": kwargs.get("attn_tau", 0.1),
+                "score_ratio": kwargs.get("attn_score_ratio", 0.9),
+            }
 
-            cfg = FastPrefillConfig(
-                threshold=kwargs.get("attn_threshold", None),
-                print_detail=kwargs.get("attn_print_detail", False),
-                stride=kwargs.get("attn_stride", 8),
-                metric=kwargs.get("attn_metric"),
-                gamma=kwargs.get("attn_gamma", 0.9),
-                tau=kwargs.get("attn_tau", 0.1),
-                score_ratio=kwargs.get("attn_score_ratio", 0.9),
-                global_mode=kwargs.get("attn_global_mode", False),
-            )
-            # use XAT's load_model instead of standard loading (like XAT model_wrappers.py)
-            logger.info(f"Loading {model_name} with XAT {kwargs.get('attn_metric')} attention")
-            self.model, _ = load_model(cfg, name_or_path=model_name)
+            if "llama" in model_name.lower():
+                from xattn.src.load_llama import load_model, FastPrefillConfig
+                cfg = FastPrefillConfig(**cfg_params)
+                # use XAT's load_model instead of standard loading (like XAT model_wrappers.py)
+                logger.info(f"Loading {model_name} with XAT {kwargs.get('attn_metric')} attention (Llama)")
+                self.model, _ = load_model(cfg, name_or_path=model_name)
+            elif "qwen2.5" in model_name.lower():
+                from xattn.src.load_qwen2 import load_qwen2_model, FastPrefillConfig
+                cfg = FastPrefillConfig(**cfg_params)
+                # use XAT's load_qwen2_model for Qwen models
+                logger.info(f"Loading {model_name} with XAT {kwargs.get('attn_metric')} attention (Qwen2.5)")
+                self.model, _ = load_qwen2_model(cfg, name_or_path=model_name)
+            
             logger.info(f"Applied {kwargs.get('attn_metric')} custom attention via XAT load_model")
+            
+            # 如果使用贪婪解码，清理模型默认generation_config中的采样参数以避免警告
+            if not self.do_sample and hasattr(self.model, 'generation_config'):
+                logger.info("Using greedy decoding, cleaning up sampling parameters from generation_config")
+                # 将采样参数设置为None而不是删除，避免transformers验证时出错
+                if hasattr(self.model.generation_config, 'temperature'):
+                    self.model.generation_config.temperature = None
+                if hasattr(self.model.generation_config, 'top_p'):
+                    self.model.generation_config.top_p = None
+                if hasattr(self.model.generation_config, 'top_k'):
+                    self.model.generation_config.top_k = None
+                # 确保do_sample设置正确
+                self.model.generation_config.do_sample = False
         else:
             # standard model loading
             config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
@@ -939,6 +961,19 @@ class HFModel(LLM):
                 self.model = torch.compile(self.model)
                 # https://huggingface.co/docs/transformers/en/llm_optims?static-kv=basic+usage%3A+generation_config#static-kv-cache-and-torchcompile
                 # self.model.forward = torch.compile(self.model.forward, mode="reduce-overhead", fullgraph=True)
+            
+            # 如果使用贪婪解码，清理模型默认generation_config中的采样参数以避免警告
+            if not self.do_sample and hasattr(self.model, 'generation_config'):
+                logger.info("Using greedy decoding, cleaning up sampling parameters from generation_config")
+                # 将采样参数设置为None而不是删除，避免transformers验证时出错
+                if hasattr(self.model.generation_config, 'temperature'):
+                    self.model.generation_config.temperature = None
+                if hasattr(self.model.generation_config, 'top_p'):
+                    self.model.generation_config.top_p = None
+                if hasattr(self.model.generation_config, 'top_k'):
+                    self.model.generation_config.top_k = None
+                # 确保do_sample设置正确
+                self.model.generation_config.do_sample = False
 
         # use the default if possible, append if necessary
         stop_token_ids = self.model.generation_config.eos_token_id
@@ -1000,18 +1035,26 @@ class HFModel(LLM):
             else:
                 inputs = BatchEncoding({"input_ids": inputs.input_ids, "attention_mask": inputs.attention_mask, "past_key_values": past_key_values})
 
-        outputs = self.model.generate(
+        # Prepare generation kwargs - only include sampling params when needed
+        generation_kwargs = {
             **inputs,
-            max_new_tokens=self.generation_max_length,
-            min_new_tokens=self.generation_min_length,
-            do_sample=self.do_sample,
-            temperature=self.temperature,
-            top_p=self.top_p,
-            eos_token_id=self.stop_token_ids,
-            pad_token_id=self.tokenizer.pad_token_id,
-            return_dict_in_generate=True,
-            output_scores=False,
-        )
+            "max_new_tokens": self.generation_max_length,
+            "min_new_tokens": self.generation_min_length,
+            "do_sample": self.do_sample,
+            "eos_token_id": self.stop_token_ids,
+            "pad_token_id": self.tokenizer.pad_token_id,
+            "return_dict_in_generate": True,
+            "output_scores": False,
+        }
+        
+        # Only add sampling parameters when do_sample=True (避免在贪婪解码时传递无效参数)
+        if self.do_sample:
+            generation_kwargs.update({
+                "temperature": self.temperature,
+                "top_p": self.top_p,
+            })
+        
+        outputs = self.model.generate(**generation_kwargs)
         text = self.tokenizer.decode(outputs['sequences'][0, input_len:], skip_special_tokens=True)
 
         save_prompt = self.tokenizer.decode(inputs["input_ids"][0][:500]) + " <skip> " + self.tokenizer.decode(inputs["input_ids"][0][-500:])
@@ -1321,7 +1364,6 @@ def load_LLM(args):
                 "attn_gamma": args.attn_gamma,
                 "attn_tau": args.attn_tau,
                 "attn_score_ratio": args.attn_score_ratio,
-                "attn_global_mode": args.attn_global_mode,
                 "attn_print_detail": args.attn_print_detail,
             })
 

@@ -179,3 +179,8 @@ gty*
 data/
 
 data.tar.gz
+
+
+llama_output/
+qwen_output/
+moe_qwen3_output/

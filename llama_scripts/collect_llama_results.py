@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""
+收集Qwen XAT attention方案的HELMET评估结果
+专门用于汇总Qwen2.5-7B-Instruct的full, xattn, flex, xflex等attention机制的结果
+"""
+
+import os
+import sys
+import json
+import numpy as np
+import pandas as pd
+import yaml
+from dataclasses import dataclass, asdict
+from tqdm import tqdm
+
+# 添加原始脚本路径以导入基础类和函数
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(script_dir)
+from collect_results import arguments, dataset_to_metrics, custom_avgs
+
+def main():
+    """收集XAT attention结果"""
+    
+    # 🎯 XAT Attention配置 - 根据你运行的脚本调整
+    xat_configs = [
+        # Full FlashInfer Attention
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "full_flashinfer", 
+         "output_dir": "llama_llama_output/full_flashinfer", "attention": "full"},
+        
+        # XAttention - 不同threshold
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
+         "output_dir": "llama_output/xattn_threshold0.95", "attention": "xattn", "threshold": 0.95},
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.9", 
+         "output_dir": "llama_output/xattn_threshold0.9", "attention": "xattn", "threshold": 0.9},
+        
+        # FlexPrefill - 不同gamma和tau
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "flex_gamma0.95_tau0.1", 
+         "output_dir": "llama_output/flex_gamma0.95_tau0.1", "attention": "flex", "gamma": 0.95, "tau": 0.1},
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "flex_gamma0.9_tau0.1", 
+         "output_dir": "llama_output/flex_gamma0.9_tau0.1", "attention": "flex", "gamma": 0.9, "tau": 0.1},
+        
+        # XFlex - 不同threshold和score_ratio组合
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.95_scoreratio0.95", 
+         "output_dir": "llama_output/xflex_threshold0.95_scoreratio0.95", "attention": "xflex", "threshold": 0.95, "score_ratio": 0.95},
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.95_scoreratio0.5", 
+         "output_dir": "llama_output/xflex_threshold0.95_scoreratio0.5", "attention": "xflex", "threshold": 0.95, "score_ratio": 0.5},
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.95_scoreratio0.2", 
+         "output_dir": "llama_output/xflex_threshold0.95_scoreratio0.2", "attention": "xflex", "threshold": 0.95, "score_ratio": 0.2},
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.5_scoreratio0.95", 
+         "output_dir": "llama_output/xflex_threshold0.5_scoreratio0.95", "attention": "xflex", "threshold": 0.5, "score_ratio": 0.95},
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.2_scoreratio0.95", 
+         "output_dir": "llama_output/xflex_threshold0.2_scoreratio0.95", "attention": "xflex", "threshold": 0.2, "score_ratio": 0.95},
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.9_scoreratio0.9", 
+         "output_dir": "llama_output/xflex_threshold0.9_scoreratio0.9", "attention": "xflex", "threshold": 0.9, "score_ratio": 0.9},
+    ]
+
+    # 📋 数据集配置文件
+    config_files = [
+        "configs/recall.yaml", "configs/recall_short.yaml", 
+        "configs/rag.yaml", "configs/rag_short.yaml", 
+        "configs/longqa.yaml", "configs/longqa_short.yaml", 
+        "configs/summ.yaml", "configs/summ_short.yaml", 
+        "configs/rerank.yaml", "configs/rerank_short.yaml", 
+        "configs/icl.yaml", "configs/icl_short.yaml", 
+        "configs/cite.yaml", "configs/cite_short.yaml", 
+    ]
+
+    # 解析数据集配置
+    dataset_configs = []
+    # 获取HELMET根目录
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    helmet_root = os.path.dirname(script_dir)
+    
+    for file in config_files:
+        config_path = os.path.join(helmet_root, file)
+        if not os.path.exists(config_path):
+            print(f"⚠️ 配置文件不存在: {config_path}")
+            continue
+            
+        c = yaml.safe_load(open(config_path))
+        
+        if isinstance(c["generation_max_length"], int):
+            c["generation_max_length"] = ",".join([str(c["generation_max_length"])] * len(c["datasets"].split(",")))
+        for d, t, l, g in zip(c['datasets'].split(','), c['test_files'].split(','), c['input_max_length'].split(','), c['generation_max_length'].split(',')):
+            #  dataset_configs.append({
+            #     "dataset": d, 
+            #     "test_name": os.path.basename(os.path.splitext(t)[0]), 
+            #     "input_max_length": int(l), 
+            #     "generation_max_length": int(g), 
+            #     "max_test_samples": c['max_test_samples'], 
+            #     'use_chat_template': c['use_chat_template'], 
+            #     'shots': c['shots']
+            # })
+            # 处理空的test_files
+            if t.strip() == '':
+                test_name = ''
+            else:
+                test_name = os.path.basename(os.path.splitext(t)[0])
+            
+            # 跳过131072长度的配置（128k实验未完成）
+            input_len = int(l.strip())
+            if input_len != 131072:
+                dataset_configs.append({
+                    "dataset": d.strip(), 
+                    "test_name": test_name, 
+                    "input_max_length": input_len, 
+                    "generation_max_length": int(g.strip()), 
+                    "max_test_samples": c['max_test_samples'], 
+                    'use_chat_template': c['use_chat_template'], 
+                    'shots': c['shots']
+                })
+
+    print(f"📊 找到 {len(dataset_configs)} 个数据集配置")
+    print(f"🎯 将处理 {len(xat_configs)} 个XAT attention配置")
+
+    # 收集结果
+    failed_paths = []
+    df = []
+    
+    for config in tqdm(xat_configs, desc="收集XAT结果"):
+        args = arguments()
+        args.tag = config["tag"]
+        args.output_dir = config["output_dir"]
+        args.model = config["model"]
+        
+        print(f"\n📁 处理配置: {config['attention']} - {config['tag']}")
+        print(f"   输出目录: {args.output_dir}")
+        
+        # 检查输出目录是否存在
+        if not os.path.exists(args.output_dir):
+            print(f"⚠️ 输出目录不存在: {args.output_dir}")
+            continue
+        
+        config_found_results = 0
+        for dataset in dataset_configs:
+            args.update(dataset)
+            
+            metric = args.get_averaged_metric()
+            dsimple, mnames = args.get_metric_name()
+
+            if metric is None:
+                failed_paths.append(args.get_path())
+                continue
+                
+            config_found_results += 1
+            for k, m in metric.items():
+                df.append({
+                    **asdict(args), 
+                    **config,
+                    "metric name": k, 
+                    "metric": m, 
+                    "dataset_simple": dsimple + " " + k, 
+                    "test_data": f"{args.dataset}-{args.test_name}-{args.input_max_length}"
+                })
+        
+        print(f"   ✅ 找到 {config_found_results} 个有效结果")
+
+    if not df:
+        print("❌ 没有找到任何有效结果！请检查:")
+        print("   1. 输出目录是否存在")
+        print("   2. tag名称是否正确")
+        print("   3. 是否有完成的评估任务")
+        return
+
+    # 生成汇总表格
+    print(f"\n📈 生成汇总表格...")
+    all_df = pd.DataFrame(df)
+    
+    # 创建透视表
+    lf_df = all_df.pivot_table(
+        index=["input_max_length", "attention", "tag"], 
+        columns="dataset_simple", 
+        values="metric", 
+        sort=False
+    )
+    lf_df = lf_df.reset_index()
+
+    # 计算自定义平均值
+    for k, v in custom_avgs.items():
+        available_cols = [col for col in v if col in lf_df.columns]
+        if available_cols:
+            lf_df[k] = lf_df[available_cols].mean(axis=1)
+        else:
+            print(f"⚠️ 跳过 {k}: 缺少必要的列")
+
+    # 保存结果
+    output_file = os.path.join(helmet_root, "xat_results_summary.csv")
+    lf_df.to_csv(output_file, index=False)
+    
+    print(f"✅ 结果已保存到: {output_file}")
+    print(f"📊 共处理了 {len(df)} 个数据点")
+    
+    # 显示预览
+    print("\n📋 结果预览:")
+    print(lf_df[['input_max_length', 'attention', 'tag'] + [col for col in custom_avgs.keys() if col in lf_df.columns]].to_string(index=False))
+
+    if failed_paths:
+        print(f"\n⚠️ 以下 {len(failed_paths)} 个路径的结果未找到:")
+        for path in failed_paths[:10]:  # 只显示前10个
+            print(f"   {path}")
+        if len(failed_paths) > 10:
+            print(f"   ... 还有 {len(failed_paths)-10} 个")
+
+if __name__ == "__main__":
+    main()
