@@ -28,7 +28,7 @@ echo "📁 Output directory: $OUTPUT_DIR"
 echo "🔧 GPU Memory check: $(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1)MB"
 
 # 创建输出目录
-mkdir -p $OUTPUT_DIR/recall
+mkdir -p $OUTPUT_DIR/recall_demo
 
 echo "Running recall task with Qwen3-30B MoE full attention (test)"
 
@@ -38,8 +38,7 @@ python eval.py \
     --model_name_or_path $MODEL_NAME \
     --attn_metric full \
     --tag qwen3_moe_test \
-    --output_dir $OUTPUT_DIR/recall \
-    --debug
+    --output_dir $OUTPUT_DIR/recall_demo
 
 echo "🎉 Qwen3-30B MoE configuration test completed! Check results in $OUTPUT_DIR"
 echo "如果没有错误，说明 Qwen3-30B-A3B-Instruct MoE 配置成功！"

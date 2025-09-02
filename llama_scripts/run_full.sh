@@ -39,7 +39,7 @@ echo "  HF_ENDPOINT: $HF_ENDPOINT"
 MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/LLM-Research/Meta-Llama-3.1-8B-Instruct"}
 
 # 设置输出目录
-export OUTPUT_DIR="output/full_flashinfer"
+export OUTPUT_DIR="llama_output/full_flashinfer"
 mkdir -p $OUTPUT_DIR
 
 # echo "Running 8k to 64k versions with full attention"

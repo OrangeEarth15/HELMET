@@ -184,3 +184,4 @@ data.tar.gz
 llama_output/
 qwen_output/
 moe_qwen3_output/
+QWEN3_MOE_SETUP_SUMMARY.md

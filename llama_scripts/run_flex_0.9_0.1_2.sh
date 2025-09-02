@@ -43,7 +43,7 @@ GAMMA=0.9
 TAU=0.1
 
 # 设置输出目录
-export OUTPUT_DIR="output/flex_gamma${GAMMA}_tau${TAU}"
+export OUTPUT_DIR="llama_output/flex_gamma${GAMMA}_tau${TAU}"
 mkdir -p $OUTPUT_DIR
 
 # echo "Running 8k to 64k versions with flex"

@@ -38,14 +38,13 @@ echo "📁 Output directory: $OUTPUT_DIR"
 
 # 只运行一个简单的任务作为测试
 echo "Running recall task with Qwen2.5 full attention (test)"
-mkdir -p $OUTPUT_DIR/recall
+mkdir -p $OUTPUT_DIR/recall_demo
 python eval.py \
     --config configs/recall_demo.yaml \
     --model_name_or_path $MODEL_NAME \
     --attn_metric full \
     --tag qwen_test \
-    --output_dir $OUTPUT_DIR/recall \
-    --debug
+    --output_dir $OUTPUT_DIR/recall_demo
 
 echo "🎉 Qwen2.5 configuration test completed! Check results in $OUTPUT_DIR"
 echo "如果没有错误，说明 Qwen2.5-7B-Instruct 配置成功！"

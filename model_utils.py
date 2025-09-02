@@ -927,6 +927,12 @@ class HFModel(LLM):
                 # use XAT's load_qwen2_model for Qwen models
                 logger.info(f"Loading {model_name} with XAT {kwargs.get('attn_metric')} attention (Qwen2.5)")
                 self.model, _ = load_qwen2_model(cfg, name_or_path=model_name)
+            elif "qwen3" in model_name.lower() and ("moe" in model_name.lower() or "a3b" in model_name.lower()):
+                from xattn.src.load_qwen3_moe import load_qwen3_moe_model, FastPrefillConfig
+                cfg = FastPrefillConfig(**cfg_params)
+                # use XAT's load_qwen3_moe_model for Qwen3 MoE models
+                logger.info(f"Loading {model_name} with XAT {kwargs.get('attn_metric')} attention (Qwen3 MoE)")
+                self.model, _ = load_qwen3_moe_model(cfg, name_or_path=model_name)
             
             logger.info(f"Applied {kwargs.get('attn_metric')} custom attention via XAT load_model")
             

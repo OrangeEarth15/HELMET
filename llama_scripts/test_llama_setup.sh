@@ -38,14 +38,13 @@ echo "📁 Output directory: $OUTPUT_DIR"
 
 # 只运行一个简单的任务作为测试
 echo "Running recall task with Llama-3.1-8B-Instruct full attention (test)"
-mkdir -p $OUTPUT_DIR/recall_short
+mkdir -p $OUTPUT_DIR/recall_demo
 python eval.py \
-    --config configs/recall_short.yaml \
+    --config configs/recall_demo.yaml \
     --model_name_or_path $MODEL_NAME \
     --attn_metric full \
     --tag qwen_test \
-    --output_dir $OUTPUT_DIR/recall_short \
-    --debug
+    --output_dir $OUTPUT_DIR/recall_demo
 
 echo "🎉 Llama-3.1-8B-Instruct configuration test completed! Check results in $OUTPUT_DIR"
 echo "如果没有错误，说明 Llama-3.1-8B-Instruct 配置成功！"

@@ -45,7 +45,7 @@ SCORE_RATIO=0.9
 STRIDE=8
 
 # 设置输出目录
-export OUTPUT_DIR="output/xflex_threshold${THRESHOLD}_scoreratio${SCORE_RATIO}"
+export OUTPUT_DIR="llama_output/xflex_threshold${THRESHOLD}_scoreratio${SCORE_RATIO}"
 mkdir -p $OUTPUT_DIR
 
 # echo "Running 8k to 64k versions with xflex"

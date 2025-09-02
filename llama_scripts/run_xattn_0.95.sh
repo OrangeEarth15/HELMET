@@ -43,7 +43,7 @@ THRESHOLD=0.95
 STRIDE=8
 
 # 设置输出目录
-export OUTPUT_DIR="output/xattn_threshold${THRESHOLD}"
+export OUTPUT_DIR="llama_output/xattn_threshold${THRESHOLD}"
 mkdir -p $OUTPUT_DIR
 
 # echo "Running 8k to 64k versions with xattn"

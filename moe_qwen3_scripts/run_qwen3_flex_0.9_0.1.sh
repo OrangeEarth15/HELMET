@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# HELMET Qwen3-30B-A3B-Instruct MoE XFlex (threshold=0.95, score_ratio=0.95) 评估脚本
-echo "Running HELMET with Qwen3-30B-A3B-Instruct MoE XFlex (threshold=0.95, score_ratio=0.95)"
+# HELMET Qwen3-30B-A3B-Instruct MoE FlexAttention (gamma=0.9, tau=0.1) 评估脚本
+echo "Running HELMET with Qwen3-30B-A3B-Instruct MoE FlexAttention (gamma=0.9, tau=0.1)"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -31,53 +31,50 @@ mkdir -p "$MODELSCOPE_CACHE"
 # 设置Qwen3-30B-A3B-Instruct模型路径
 MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/Qwen/Qwen3-30B-A3B-Instruct-2507"}
 
-# XFlex参数
-THRESHOLD=0.95
-SCORE_RATIO=0.95
-STRIDE=16
+# FlexAttention参数
+GAMMA=0.9
+TAU=0.1
 
 # 设置输出目录
-export OUTPUT_DIR="moe_qwen3_output/xflex_threshold${THRESHOLD}_scoreratio${SCORE_RATIO}"
+export OUTPUT_DIR="moe_qwen3_output/flex_gamma${GAMMA}_tau${TAU}"
 mkdir -p $OUTPUT_DIR
 
 echo "🔧 GPU Memory check: $(nvidia-smi --query-gpu=memory.total,memory.used --format=csv,noheader,nounits | head -1)"
 echo "📍 Model: Qwen3-30B-A3B-Instruct MoE (128专家, 8专家/token)"  
-echo "🎯 Attention: XFlex (threshold=$THRESHOLD, score_ratio=$SCORE_RATIO, stride=$STRIDE)"
+echo "🎯 Attention: FlexAttention (gamma=$GAMMA, tau=$TAU)"
 
-echo "Running 8k-64k versions with Qwen3-30B-A3B-Instruct MoE XFlex"
+echo "Running 8k-64k versions with Qwen3-30B-A3B-Instruct MoE FlexAttention"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task (8k-64k) with Qwen3 MoE XFlex"
+    echo "Running task: $task (8k-64k) with Qwen3 MoE FlexAttention"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \
         --config configs/${task}_short.yaml \
         --model_name_or_path $MODEL_NAME \
-        --attn_metric xflex \
-        --attn_threshold $THRESHOLD \
-        --attn_score_ratio $SCORE_RATIO \
-        --attn_stride $STRIDE \
-        --tag qwen3_moe_xflex_threshold${THRESHOLD}_scoreratio${SCORE_RATIO} \
+        --attn_metric flex \
+        --attn_gamma $GAMMA \
+        --attn_tau $TAU \
+        --tag qwen3_moe_flex_gamma${GAMMA}_tau${TAU} \
         --output_dir $OUTPUT_DIR/$task \
         --max_test_samples 50 \
         --num_workers 2
 done
 
-echo "Running 128k versions with Qwen3-30B-A3B-Instruct MoE XFlex"
+echo "Running 128k versions with Qwen3-30B-A3B-Instruct MoE FlexAttention"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task (128k) with Qwen3 MoE XFlex"
+    echo "Running task: $task (128k) with Qwen3 MoE FlexAttention"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \
         --config configs/${task}.yaml \
         --model_name_or_path $MODEL_NAME \
-        --attn_metric xflex \
-        --attn_threshold $THRESHOLD \
-        --attn_score_ratio $SCORE_RATIO \
-        --attn_stride $STRIDE \
-        --tag qwen3_moe_xflex_threshold${THRESHOLD}_scoreratio${SCORE_RATIO} \
+        --attn_metric flex \
+        --attn_gamma $GAMMA \
+        --attn_tau $TAU \
+        --tag qwen3_moe_flex_gamma${GAMMA}_tau${TAU} \
         --output_dir $OUTPUT_DIR/$task \
         --max_test_samples 50 \
         --num_workers 2
 done
 
-echo "🎉 Qwen3-30B MoE XFlex evaluation completed! Results in $OUTPUT_DIR"
+echo "🎉 Qwen3-30B MoE FlexAttention evaluation completed! Results in $OUTPUT_DIR"
 echo "📊 MoE架构: 128专家, 8专家/token激活"
-echo "💡 XFlex结合了XAttention和FlexAttention的优势，特别适合MoE模型"
+echo "💡 FlexAttention动态调整注意力分布，特别适合MoE模型的复杂任务"
