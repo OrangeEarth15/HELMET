@@ -1,5 +1,6 @@
 这两个文件是在XAttention里的修改attention结构后的模型文件
-在HELMET里是直接在mode_utils里模型的
+
+在HELMET里是直接在mode_utils里import模型的
 
 ```python
 if "llama" in model_name.lower():
@@ -16,4 +17,5 @@ elif "qwen2.5" in model_name.lower():
     self.model, _ = load_qwen2_model(cfg, name_or_path=model_name)
 ```
 目前这两个文件的接口不是对应最新版本的transformer库的（出于与其他库的适配考虑）
+
 如果要支持qwen3 moe的话需要upgrade transformer库到比较新的版本，然后改一下对照最新版的接口把函数返回值数量从三个改成两个应该就好了（去掉past_key_value）
