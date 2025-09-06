@@ -153,35 +153,44 @@ def main():
     print(f"\n📈 生成汇总表格...")
     all_df = pd.DataFrame(df)
     
-    # 创建透视表
-    lf_df = all_df.pivot_table(
-        index=["input_max_length", "attention", "tag"], 
-        columns="dataset_simple", 
-        values="metric", 
-        sort=False
-    )
-    lf_df = lf_df.reset_index()
-
-    # 计算自定义平均值
-    for k, v in custom_avgs.items():
-        available_cols = [col for col in v if col in lf_df.columns]
-        if available_cols:
-            lf_df[k] = lf_df[available_cols].mean(axis=1)
-        else:
-            print(f"⚠️ 跳过 {k}: 缺少必要的列")
-
-    # 保存结果
-    output_file = os.path.join(helmet_root, "qwen_results_summary.csv")
-    lf_df.to_csv(output_file, index=False)
+    # 按模型分组，为每个模型生成单独的CSV文件
+    models = all_df['model'].unique()
+    print(f"📊 找到 {len(models)} 个模型: {list(models)}")
     
-    print(f"✅ 结果已保存到: {output_file}")
-    print(f"📊 共处理了 {len(df)} 个数据点")
-    
-    # 显示预览
-    print("\n📋 结果预览:")
-    available_custom_cols = [col for col in custom_avgs.keys() if col in lf_df.columns]
-    if available_custom_cols:
-        print(lf_df[['input_max_length', 'attention', 'tag'] + available_custom_cols].to_string(index=False))
+    for model in models:
+        print(f"\n🔄 处理模型: {model}")
+        model_df = all_df[all_df['model'] == model].copy()
+        
+        # 创建透视表
+        lf_df = model_df.pivot_table(
+            index=["input_max_length", "attention", "tag"], 
+            columns="dataset_simple", 
+            values="metric", 
+            sort=False
+        )
+        lf_df = lf_df.reset_index()
+
+        # 计算自定义平均值
+        for k, v in custom_avgs.items():
+            available_cols = [col for col in v if col in lf_df.columns]
+            if available_cols:
+                lf_df[k] = lf_df[available_cols].mean(axis=1)
+            else:
+                print(f"⚠️ 跳过 {k}: 缺少必要的列")
+
+        # 保存结果 - 为每个模型生成单独的CSV文件
+        model_name = model.replace("Qwen", "qwen").replace("-", "_").replace(".", "").lower()
+        output_file = os.path.join(helmet_root, f"{model_name}_results_summary.csv")
+        lf_df.to_csv(output_file, index=False)
+        
+        print(f"✅ {model} 结果已保存到: {output_file}")
+        print(f"📊 共处理了 {len(model_df)} 个数据点")
+        
+        # 显示预览
+        print(f"\n📋 {model} 结果预览:")
+        available_custom_cols = [col for col in custom_avgs.keys() if col in lf_df.columns]
+        if available_custom_cols:
+            print(lf_df[['input_max_length', 'attention', 'tag'] + available_custom_cols].to_string(index=False))
 
     if failed_paths:
         print(f"\n⚠️ 以下 {len(failed_paths)} 个路径的结果未找到:")
