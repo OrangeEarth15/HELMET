@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# HELMET Qwen2.5-7B-Instruct Flex Attention 评估脚本
-echo "Running HELMET with Qwen2.5-7B-Instruct Flex Attention (gamma=0.95, tau=0.1)"
+# HELMET Qwen2.5-MoE-A2.7B-Instruct Full Attention 128K 评估脚本
+echo "Running HELMET with Qwen2.5-MoE-A2.7B-Instruct Full Attention (128K)"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -27,25 +27,30 @@ mkdir -p "$HF_HUB_CACHE"
 mkdir -p "$TORCH_HOME"
 mkdir -p "$MODELSCOPE_CACHE"
 
-# 设置Qwen2.5-7B-Instruct模型路径
-MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/Qwen/Qwen2.5-7B-Instruct"}
+echo "🗂️ Cache directories set to:"
+echo "  HF_HOME: $HF_HOME"
+echo "  HF_DATASETS_CACHE: $HF_DATASETS_CACHE"
+echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
+echo "  TORCH_HOME: $TORCH_HOME"
+echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
+
+# 设置Qwen2.5-MoE-A2.7B-Instruct模型路径
+MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/Qwen/Qwen2.5-MoE-A2.7B-Instruct"}
 
 # 设置输出目录
-export OUTPUT_DIR="qwen_output/flex_gamma0.95_tau0.1"
+export OUTPUT_DIR="moe_qwen3_output/full_128k"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 128k versions with Qwen2.5-7B-Instruct Flex Attention (gamma=0.95, tau=0.1)"
+echo "Running 128k versions with Qwen2.5-MoE-A2.7B-Instruct Full Attention"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with Qwen2.5 Flex Attention (gamma=0.95, tau=0.1)"
+    echo "Running task: $task with Qwen2.5 MoE Full Attention (128K)"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \
         --config configs/${task}.yaml \
         --model_name_or_path $MODEL_NAME \
-        --attn_metric flex \
-        --attn_gamma 0.95 \
-        --attn_tau 0.1 \
-        --tag qwen_flex_gamma0.95_tau0.1 \
+        --attn_metric full \
+        --tag qwen3_moe_full_128k \
         --output_dir $OUTPUT_DIR/$task
 done
 
-echo "Qwen2.5 Flex Attention (gamma=0.95, tau=0.1) evaluation completed! Results in $OUTPUT_DIR"
+echo "Qwen2.5-MoE Full Attention (128K) evaluation completed! Results in $OUTPUT_DIR"

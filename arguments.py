@@ -72,6 +72,7 @@ def parse_arguments():
     parser.add_argument("--attn_gamma", type=float, default=0.9, help="gamma for flex")
     parser.add_argument("--attn_tau", type=float, default=0.1, help="tau for flex")
     parser.add_argument("--attn_score_ratio", type=float, default=0.9, help="score ratio for tattn/xflex")
+    parser.add_argument("--attn_use_simple", type=int, default=0, choices=[0, 1, 2, 3, 4, 5, 6], help="simple attention version: 0=disabled, 1=v1, 2=v2, 3=v3, 4=v4, 5=v5, 6=v6 (golden ratio selection + temperature)")
 
     parser.add_argument("--attn_print_detail", type=ast.literal_eval, choices=[True, False], default=False, help="print detailed timing for custom attention")
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# HELMET XAttention 评估脚本 - threshold 0.9
-echo "Running HELMET with XAttention (threshold=0.9)"
+# HELMET Qwen2.5-7B-Instruct XAttention 8-64K 评估脚本 - threshold 0.95
+echo "Running HELMET with Qwen2.5-7B-Instruct XAttention (8-64K, threshold=0.95)"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -33,46 +33,30 @@ echo "  HF_DATASETS_CACHE: $HF_DATASETS_CACHE"
 echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
 echo "  TORCH_HOME: $TORCH_HOME"
 echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
-echo "  HF_ENDPOINT: $HF_ENDPOINT"
 
-# 设置模型路径
-MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/LLM-Research/Meta-Llama-3.1-8B-Instruct"}
+# 设置Qwen2.5-7B-Instruct模型路径
+MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/Qwen/Qwen2.5-7B-Instruct"}
 
 # XAttention参数
-THRESHOLD=0.9
+THRESHOLD=0.95
 STRIDE=8
 
 # 设置输出目录
-export OUTPUT_DIR="llama_output/xattn_threshold${THRESHOLD}"
+export OUTPUT_DIR="qwen_output/xattn_threshold${THRESHOLD}"
 mkdir -p $OUTPUT_DIR
 
-# echo "Running 8k to 64k versions with xattn"
-# for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-#     echo "Running task: $task (short) with xattn (threshold=$THRESHOLD, stride=$STRIDE] (Custom Cache)"
-#     mkdir -p $OUTPUT_DIR/$task
-#     python eval.py \
-#         --config configs/${task}_short.yaml \
-#         --model_name_or_path $MODEL_NAME \
-#         --attn_metric xattn \
-#         --attn_threshold $THRESHOLD \
-#         --attn_stride $STRIDE \
-#         --tag xattn_threshold${THRESHOLD} \
-#         --output_dir $OUTPUT_DIR/$task
-# done
-
-echo "Running 128k versions with xattn"
+echo "Running 8k to 64k versions with Qwen2.5-7B-Instruct XAttention (threshold=$THRESHOLD, stride=$STRIDE)"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with xattn (threshold=$THRESHOLD, stride=$STRIDE] (Custom Cache)"
+    echo "Running task: $task (short) with Qwen2.5 XAttention (threshold=$THRESHOLD)"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \
-        --config configs/${task}.yaml \
+        --config configs/${task}_short.yaml \
         --model_name_or_path $MODEL_NAME \
         --attn_metric xattn \
         --attn_threshold $THRESHOLD \
         --attn_stride $STRIDE \
-        --tag xattn_threshold${THRESHOLD} \
+        --tag qwen_xattn_threshold${THRESHOLD} \
         --output_dir $OUTPUT_DIR/$task
 done
 
-
-echo "XAttention evaluation completed! Results in $OUTPUT_DIR"
+echo "Qwen2.5 XAttention (threshold=$THRESHOLD, 8-64K) evaluation completed! Results in $OUTPUT_DIR"

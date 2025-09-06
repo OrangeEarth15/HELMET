@@ -16,23 +16,41 @@ from tqdm import tqdm
 # 添加HELMET根目录到路径
 script_dir = os.path.dirname(os.path.abspath(__file__))
 helmet_root = os.path.dirname(script_dir)
-sys.path.append(helmet_root)
+sys.path.insert(0, helmet_root)
 
 # 导入collect_results的基础类和函数
-from scripts.collect_results import arguments, dataset_to_metrics, custom_avgs
+import importlib.util
+spec = importlib.util.spec_from_file_location('collect_results', os.path.join(helmet_root, 'scripts', 'collect_results.py'))
+collect_results = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(collect_results)
+arguments = collect_results.arguments
+dataset_to_metrics = collect_results.dataset_to_metrics
+custom_avgs = collect_results.custom_avgs
 
 def main():
     """收集Qwen XAT attention结果"""
     
-    # 🎯 Qwen XAT Attention配置
+    # 获取HELMET根目录
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    helmet_root = os.path.dirname(script_dir)
+    
+    # 🎯 Qwen XAT Attention配置 - 根据实际存在的目录调整
     qwen_configs = [
         # Full FlashInfer Attention
-        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_full_flashinfer", 
-         "output_dir": "qwen_output/full_flashinfer", "attention": "full"},
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_full_flashattention", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "full_flashattention"), "attention": "full"},
         
-        # 可以根据您实际运行的配置添加更多
-        # {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_threshold0.95", 
-        #  "output_dir": "qwen_output/xattn_threshold0.95", "attention": "xattn", "threshold": 0.95},
+        # XAttention - 不同threshold
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
+        
+        # XAttention V6 - 不同threshold
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v6_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v6_threshold0.95"), "attention": "xattn_v6", "threshold": 0.95},
+        
+        # FlexPrefill - 不同gamma和tau
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_flex_gamma0.95_tau0.1", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "flex_gamma0.95_tau0.1"), "attention": "flex", "gamma": 0.95, "tau": 0.1},
     ]
 
     # 📋 数据集配置文件

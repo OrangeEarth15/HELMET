@@ -913,6 +913,7 @@ class HFModel(LLM):
                 "gamma": kwargs.get("attn_gamma", 0.9),
                 "tau": kwargs.get("attn_tau", 0.1),
                 "score_ratio": kwargs.get("attn_score_ratio", 0.9),
+                "use_simple_attention": kwargs.get("attn_use_simple", 0),
             }
 
             if "llama" in model_name.lower():

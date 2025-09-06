@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# HELMET Qwen2.5-7B-Instruct XFlex Attention 评估脚本
-echo "Running HELMET with Qwen2.5-7B-Instruct XFlex Attention (threshold=0.95, score_ratio=0.95)"
+# HELMET Qwen2.5-7B-Instruct Full Attention 8-64K 评估脚本
+echo "Running HELMET with Qwen2.5-7B-Instruct Full Attention (8-64K)"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -27,25 +27,30 @@ mkdir -p "$HF_HUB_CACHE"
 mkdir -p "$TORCH_HOME"
 mkdir -p "$MODELSCOPE_CACHE"
 
+echo "🗂️ Cache directories set to:"
+echo "  HF_HOME: $HF_HOME"
+echo "  HF_DATASETS_CACHE: $HF_DATASETS_CACHE"
+echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
+echo "  TORCH_HOME: $TORCH_HOME"
+echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
+
 # 设置Qwen2.5-7B-Instruct模型路径
 MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/Qwen/Qwen2.5-7B-Instruct"}
 
 # 设置输出目录
-export OUTPUT_DIR="qwen_output/xflex_threshold0.95_scoreratio0.95"
+export OUTPUT_DIR="qwen_output/full_flashattention"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 128k versions with Qwen2.5-7B-Instruct XFlex Attention (threshold=0.95, score_ratio=0.95)"
+echo "Running 8k to 64k versions with Qwen2.5-7B-Instruct Full Attention"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with Qwen2.5 XFlex Attention (threshold=0.95, score_ratio=0.95)"
+    echo "Running task: $task (short) with Qwen2.5 Full Attention"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \
-        --config configs/${task}.yaml \
+        --config configs/${task}_short.yaml \
         --model_name_or_path $MODEL_NAME \
-        --attn_metric xflex \
-        --attn_threshold 0.95 \
-        --attn_score_ratio 0.95 \
-        --tag qwen_xflex_threshold0.95_scoreratio0.95 \
+        --attn_metric full \
+        --tag qwen_full \
         --output_dir $OUTPUT_DIR/$task
 done
 
-echo "Qwen2.5 XFlex Attention (threshold=0.95, score_ratio=0.95) evaluation completed! Results in $OUTPUT_DIR"
+echo "Qwen2.5 Full Attention (8-64K) evaluation completed! Results in $OUTPUT_DIR"

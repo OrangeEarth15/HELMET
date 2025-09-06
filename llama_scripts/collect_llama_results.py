@@ -13,45 +13,45 @@ import yaml
 from dataclasses import dataclass, asdict
 from tqdm import tqdm
 
-# 添加原始脚本路径以导入基础类和函数
+# 添加HELMET根目录到路径
 script_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(script_dir)
-from collect_results import arguments, dataset_to_metrics, custom_avgs
+helmet_root = os.path.dirname(script_dir)
+sys.path.insert(0, helmet_root)
+
+# 导入collect_results的基础类和函数
+import importlib.util
+spec = importlib.util.spec_from_file_location('collect_results', os.path.join(helmet_root, 'scripts', 'collect_results.py'))
+collect_results = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(collect_results)
+arguments = collect_results.arguments
+dataset_to_metrics = collect_results.dataset_to_metrics
+custom_avgs = collect_results.custom_avgs
 
 def main():
     """收集XAT attention结果"""
     
-    # 🎯 XAT Attention配置 - 根据你运行的脚本调整
+    # 获取HELMET根目录
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    helmet_root = os.path.dirname(script_dir)
+    
+    # 🎯 XAT Attention配置 - 只评估非deprecated的配置
+    # 使用绝对路径
     xat_configs = [
         # Full FlashInfer Attention
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "full_flashinfer", 
-         "output_dir": "llama_llama_output/full_flashinfer", "attention": "full"},
+         "output_dir": os.path.join(helmet_root, "llama_output", "full_flashinfer"), "attention": "full"},
         
         # XAttention - 不同threshold
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
-         "output_dir": "llama_output/xattn_threshold0.95", "attention": "xattn", "threshold": 0.95},
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.9", 
-         "output_dir": "llama_output/xattn_threshold0.9", "attention": "xattn", "threshold": 0.9},
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
+        
+        # XAttention V6 - 不同threshold
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v6_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v6_threshold0.95"), "attention": "xattn_v6", "threshold": 0.95},
         
         # FlexPrefill - 不同gamma和tau
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "flex_gamma0.95_tau0.1", 
-         "output_dir": "llama_output/flex_gamma0.95_tau0.1", "attention": "flex", "gamma": 0.95, "tau": 0.1},
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "flex_gamma0.9_tau0.1", 
-         "output_dir": "llama_output/flex_gamma0.9_tau0.1", "attention": "flex", "gamma": 0.9, "tau": 0.1},
-        
-        # XFlex - 不同threshold和score_ratio组合
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.95_scoreratio0.95", 
-         "output_dir": "llama_output/xflex_threshold0.95_scoreratio0.95", "attention": "xflex", "threshold": 0.95, "score_ratio": 0.95},
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.95_scoreratio0.5", 
-         "output_dir": "llama_output/xflex_threshold0.95_scoreratio0.5", "attention": "xflex", "threshold": 0.95, "score_ratio": 0.5},
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.95_scoreratio0.2", 
-         "output_dir": "llama_output/xflex_threshold0.95_scoreratio0.2", "attention": "xflex", "threshold": 0.95, "score_ratio": 0.2},
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.5_scoreratio0.95", 
-         "output_dir": "llama_output/xflex_threshold0.5_scoreratio0.95", "attention": "xflex", "threshold": 0.5, "score_ratio": 0.95},
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.2_scoreratio0.95", 
-         "output_dir": "llama_output/xflex_threshold0.2_scoreratio0.95", "attention": "xflex", "threshold": 0.2, "score_ratio": 0.95},
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xflex_threshold0.9_scoreratio0.9", 
-         "output_dir": "llama_output/xflex_threshold0.9_scoreratio0.9", "attention": "xflex", "threshold": 0.9, "score_ratio": 0.9},
+         "output_dir": os.path.join(helmet_root, "llama_output", "flex_gamma0.95_tau0.1"), "attention": "flex", "gamma": 0.95, "tau": 0.1},
     ]
 
     # 📋 数据集配置文件
@@ -67,9 +67,6 @@ def main():
 
     # 解析数据集配置
     dataset_configs = []
-    # 获取HELMET根目录
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    helmet_root = os.path.dirname(script_dir)
     
     for file in config_files:
         config_path = os.path.join(helmet_root, file)

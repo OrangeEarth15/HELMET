@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# HELMET Qwen2.5-7B-Instruct FlashInfer Full Attention 评估脚本
-echo "Running HELMET with Qwen2.5-7B-Instruct Full Attention"
+# HELMET Qwen2.5-7B-Instruct Full Attention 128K 评估脚本
+echo "Running HELMET with Qwen2.5-7B-Instruct Full Attention (128K)"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -38,43 +38,19 @@ echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
 MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/Qwen/Qwen2.5-7B-Instruct"}
 
 # 设置输出目录
-export OUTPUT_DIR="qwen_output/full_flashinfer"
+export OUTPUT_DIR="qwen_output/full_flashattention"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 8k-64k versions with Qwen2.5-7B-Instruct Full Attention"
-for task in "summ"; do
-    echo "Running task: $task (8k-64k) with Qwen2.5 full attention"
-    mkdir -p $OUTPUT_DIR/${task}_short
+echo "Running 128k versions with Qwen2.5-7B-Instruct Full Attention"
+for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+    echo "Running task: $task with Qwen2.5 Full Attention (128K)"
+    mkdir -p $OUTPUT_DIR/$task
     python eval.py \
-        --config configs/${task}_short.yaml \
+        --config configs/${task}.yaml \
         --model_name_or_path $MODEL_NAME \
         --attn_metric full \
-        --tag qwen_full_flashinfer \
-        --output_dir $OUTPUT_DIR/${task}_short
+        --tag qwen_full \
+        --output_dir $OUTPUT_DIR/$task
 done
 
-# echo "Running 8k-64k versions with Qwen2.5-7B-Instruct Full Attention"
-# for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-#     echo "Running task: $task (8k-64k) with Qwen2.5 full attention"
-#     mkdir -p $OUTPUT_DIR/${task}_short
-#     python eval.py \
-#         --config configs/${task}_short.yaml \
-#         --model_name_or_path $MODEL_NAME \
-#         --attn_metric full \
-#         --tag qwen_full_flashinfer \
-#         --output_dir $OUTPUT_DIR/$task
-# done
-
-# echo "Running 128k versions with Qwen2.5-7B-Instruct Full Attention"
-# for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-#     echo "Running task: $task with Qwen2.5 full attention"
-#     mkdir -p $OUTPUT_DIR/$task
-#     python eval.py \
-#         --config configs/${task}.yaml \
-#         --model_name_or_path $MODEL_NAME \
-#         --attn_metric full \
-#         --tag qwen_full_flashinfer \
-#         --output_dir $OUTPUT_DIR/$task
-# done
-
-echo "Qwen2.5 Full attention evaluation completed! Results in $OUTPUT_DIR"
+echo "Qwen2.5 Full Attention (128K) evaluation completed! Results in $OUTPUT_DIR"

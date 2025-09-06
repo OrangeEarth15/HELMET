@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# HELMET XAttention 评估脚本 - threshold 0.95
-echo "Running HELMET with XAttention (threshold=0.95)"
+# HELMET Qwen2.5-MoE-A2.7B-Instruct XAttention v6 评估脚本 - threshold 0.95
+echo "Running HELMET with Qwen2.5-MoE-A2.7B-Instruct XAttention v6 (threshold=0.95)"
+echo "💡 v6 = golden ratio selection + temperature"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -33,36 +34,22 @@ echo "  HF_DATASETS_CACHE: $HF_DATASETS_CACHE"
 echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
 echo "  TORCH_HOME: $TORCH_HOME"
 echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
-echo "  HF_ENDPOINT: $HF_ENDPOINT"
 
-# 设置模型路径
-MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/LLM-Research/Meta-Llama-3.1-8B-Instruct"}
+# 设置Qwen2.5-MoE-A2.7B-Instruct模型路径
+MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/Qwen/Qwen2.5-MoE-A2.7B-Instruct"}
 
-# XAttention参数
+# XAttention v6参数
 THRESHOLD=0.95
 STRIDE=8
+USE_SIMPLE=6  # v6版本：golden ratio selection + temperature
 
 # 设置输出目录
-export OUTPUT_DIR="llama_output/xattn_threshold${THRESHOLD}"
+export OUTPUT_DIR="moe_qwen3_output/xattn_v6_threshold${THRESHOLD}"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 8k to 64k versions with xattn"
-# for task in "cite" "rerank" "icl" "summ" "longqa" "rag" "recall"; do
-#     echo "Running task: $task (short) with xattn (threshold=$THRESHOLD, stride=$STRIDE] (Custom Cache)"
-#     mkdir -p $OUTPUT_DIR/$task
-#     python eval.py \
-#         --config configs/${task}_short.yaml \
-#         --model_name_or_path $MODEL_NAME \
-#         --attn_metric xattn \
-#         --attn_threshold $THRESHOLD \
-#         --attn_stride $STRIDE \
-#         --tag xattn_threshold${THRESHOLD} \
-#         --output_dir $OUTPUT_DIR/$task
-# done
-
-echo "Running 128k versions with xattn"
-for task in "cite" "rerank" "icl" "summ" "longqa" "rag" "recall"; do
-    echo "Running task: $task with xattn (threshold=$THRESHOLD, stride=$STRIDE] (Custom Cache)"
+echo "Running 128k versions with Qwen2.5-MoE-A2.7B-Instruct XAttention v6 (threshold=$THRESHOLD, stride=$STRIDE, use_simple=$USE_SIMPLE)"
+for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+    echo "Running task: $task with Qwen2.5 MoE XAttention v6 (threshold=$THRESHOLD)"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \
         --config configs/${task}.yaml \
@@ -70,9 +57,9 @@ for task in "cite" "rerank" "icl" "summ" "longqa" "rag" "recall"; do
         --attn_metric xattn \
         --attn_threshold $THRESHOLD \
         --attn_stride $STRIDE \
-        --tag xattn_threshold${THRESHOLD} \
+        --attn_use_simple $USE_SIMPLE \
+        --tag qwen3_moe_xattn_v6_threshold${THRESHOLD} \
         --output_dir $OUTPUT_DIR/$task
 done
 
-
-echo "XAttention evaluation completed! Results in $OUTPUT_DIR"
+echo "Qwen2.5-MoE XAttention v6 (threshold=$THRESHOLD) evaluation completed! Results in $OUTPUT_DIR"

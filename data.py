@@ -23,31 +23,12 @@ except ImportError:
 import re
 from utils import calculate_metrics, parse_output, parse_rankings, calculate_retrieval_metrics
 
-# 全局变量来存储当前模型的tokenizer路径
-_current_model_path = None
-
 def get_appropriate_tokenizer():
-    """根据当前使用的模型选择合适的tokenizer"""
-    global _current_model_path
-    
-    if _current_model_path and "qwen" in _current_model_path.lower():
-        try:
-            # 使用Qwen tokenizer
-            from transformers import AutoTokenizer
-            return AutoTokenizer.from_pretrained(_current_model_path)
-        except:
-            try:
-                return AutoTokenizer.from_pretrained("Qwen/Qwen2.5-7B-Instruct")
-            except:
-                pass
-    
-    # 默认使用Llama-2 tokenizer
+    """
+    返回HELMET基准测试的标准tokenizer。
+    使用LLaMA-2 tokenizer确保所有模型看到相同的信息量，保证比较公平性。
+    """
     return MSAutoTokenizer.from_pretrained("shakechen/Llama-2-7b-hf")
-
-def set_current_model_path(model_path):
-    """设置当前使用的模型路径"""
-    global _current_model_path
-    _current_model_path = model_path
 
 import logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
@@ -697,8 +678,6 @@ def default_post_process(output, example):
 
 
 def load_data(args, dataset, path=None, demo_path=None):
-    # 设置当前模型路径以供tokenizer选择使用
-    set_current_model_path(args.model_name_or_path)
     if "popqa" in dataset:
         popularity_threshold = float(dataset.split("_")[-1])
         data = load_qa(dataset, path, demo_path, max_test_samples=args.max_test_samples, popularity_threshold=popularity_threshold, shots=args.shots)
