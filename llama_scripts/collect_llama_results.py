@@ -94,18 +94,17 @@ def main():
             else:
                 test_name = os.path.basename(os.path.splitext(t)[0])
             
-            # 跳过131072长度的配置（128k实验未完成）
+            # 包含所有长度的配置
             input_len = int(l.strip())
-            if input_len != 131072:
-                dataset_configs.append({
-                    "dataset": d.strip(), 
-                    "test_name": test_name, 
-                    "input_max_length": input_len, 
-                    "generation_max_length": int(g.strip()), 
-                    "max_test_samples": c['max_test_samples'], 
-                    'use_chat_template': c['use_chat_template'], 
-                    'shots': c['shots']
-                })
+            dataset_configs.append({
+                "dataset": d.strip(), 
+                "test_name": test_name, 
+                "input_max_length": input_len, 
+                "generation_max_length": int(g.strip()), 
+                "max_test_samples": c['max_test_samples'], 
+                'use_chat_template': c['use_chat_template'], 
+                'shots': c['shots']
+            })
 
     print(f"📊 找到 {len(dataset_configs)} 个数据集配置")
     print(f"🎯 将处理 {len(xat_configs)} 个XAT attention配置")
