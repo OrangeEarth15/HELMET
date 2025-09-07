@@ -897,8 +897,8 @@ class HFModel(LLM):
         self.tokenizer.truncation_side = "left"
         self.tokenizer.padding_side = "left"
 
-        # integrate XAT custom attention for Llama and Qwen models (hardcoded like XAT)
-        if kwargs.get("attn_metric", None) is not None and ("llama" in model_name.lower() or "qwen" in model_name.lower()):
+        # integrate XAT custom attention for Llama, Qwen and GLM models (hardcoded like XAT)
+        if kwargs.get("attn_metric", None) is not None and ("llama" in model_name.lower() or "qwen" in model_name.lower() or "glm" in model_name.lower()):
             import sys
             # 添加 XAT 路径到 sys.path
             xat_path = '/home/scratch.sarawang_ent/project/XAT'
@@ -934,6 +934,12 @@ class HFModel(LLM):
                 # use XAT's load_qwen3_moe_model for Qwen3 MoE models
                 logger.info(f"Loading {model_name} with XAT {kwargs.get('attn_metric')} attention (Qwen3 MoE)")
                 self.model, _ = load_qwen3_moe_model(cfg, name_or_path=model_name)
+            elif "glm" in model_name.lower():
+                from xattn.src.load_glm4 import load_glm4_model, FastPrefillConfigGLM4
+                cfg = FastPrefillConfigGLM4(**cfg_params)
+                # use XAT's load_glm4_model for GLM models
+                logger.info(f"Loading {model_name} with XAT {kwargs.get('attn_metric')} attention (GLM4)")
+                self.model, _ = load_glm4_model(cfg, name_or_path=model_name)
             
             logger.info(f"Applied {kwargs.get('attn_metric')} custom attention via XAT load_model")
             
