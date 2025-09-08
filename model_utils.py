@@ -993,9 +993,30 @@ class HFModel(LLM):
         stop_token_ids = [stop_token_ids] if not isinstance(stop_token_ids, list) else stop_token_ids
         if stop_new_line:
             stop = list(set(["\n", "Ċ", "ĊĊ", "<0x0A>"]))
-            stop_token_ids = list(set([self.tokenizer.convert_tokens_to_ids(stop_token) for stop_token in stop] + stop_token_ids))
-            if "llama" in model_name.lower():
-                stop_token_ids.remove(self.tokenizer.unk_token_id)
+            # Handle GLM models which may not recognize some of these tokens
+            if "glm" in model_name.lower():
+                # For GLM models, only use tokens that the tokenizer can recognize
+                valid_stop_tokens = []
+                for stop_token in stop:
+                    try:
+                        token_id = self.tokenizer.convert_tokens_to_ids(stop_token)
+                        if token_id is not None and token_id != self.tokenizer.unk_token_id:
+                            valid_stop_tokens.append(token_id)
+                    except (KeyError, ValueError):
+                        # Skip tokens that the tokenizer doesn't recognize
+                        continue
+                # Add newline token ID directly if available
+                try:
+                    newline_id = self.tokenizer.encode("\n", add_special_tokens=False)
+                    if newline_id:
+                        valid_stop_tokens.extend(newline_id)
+                except:
+                    pass
+                stop_token_ids = list(set(valid_stop_tokens + stop_token_ids))
+            else:
+                stop_token_ids = list(set([self.tokenizer.convert_tokens_to_ids(stop_token) for stop_token in stop] + stop_token_ids))
+                if "llama" in model_name.lower():
+                    stop_token_ids.remove(self.tokenizer.unk_token_id)
             stop_token_ids = [x for x in stop_token_ids if x is not None]
         self.stop_token_ids = stop_token_ids
         self.device = self.model.device

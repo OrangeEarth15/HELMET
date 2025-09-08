@@ -40,6 +40,10 @@ def main():
         {"model": "GLM-4-9B-Chat", "tag": "glm4_full_flashattention", 
          "output_dir": os.path.join(helmet_root, "glm4_output", "full_flashattention"), "attention": "full"},
         
+        # XAttention 标准版 - threshold 0.95
+        {"model": "GLM-4-9B-Chat", "tag": "glm4_xattn_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "glm4_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
+        
         # XAttention V6 - 不同threshold
         {"model": "GLM-4-9B-Chat", "tag": "glm4_xattn_v6_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "glm4_output", "xattn_v6_threshold0.95"), "attention": "xattn_v6", "threshold": 0.95},
@@ -117,13 +121,40 @@ def main():
         for dataset in dataset_configs:
             args.update(dataset)
             
+            # 🔧 修复：检查是否需要使用_short子目录
+            original_get_path = args.get_path
+            def patched_get_path():
+                path = original_get_path()
+                # 如果输入长度小于131072，说明是short配置，需要使用_short子目录
+                if args.input_max_length < 131072:
+                    # 获取当前路径的目录和文件名
+                    dir_path = os.path.dirname(path)
+                    filename = os.path.basename(path)
+                    parent_dir = os.path.dirname(dir_path)
+                    current_subdir = os.path.basename(dir_path)
+                    
+                    # 如果当前子目录不以_short结尾，添加_short后缀
+                    if not current_subdir.endswith('_short'):
+                        new_subdir = current_subdir + '_short'
+                        new_path = os.path.join(parent_dir, new_subdir, filename)
+                        return new_path
+                return path
+            
+            # 临时替换get_path方法
+            args.get_path = patched_get_path
+            
             metric = args.get_averaged_metric()
             dsimple, mnames = args.get_metric_name()
 
             if metric is None:
                 failed_paths.append(args.get_path())
+                # 恢复原方法
+                args.get_path = original_get_path
                 continue
                 
+            # 恢复原方法
+            args.get_path = original_get_path
+            
             config_found_results += 1
             for k, m in metric.items():
                 df.append({
