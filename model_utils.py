@@ -940,6 +940,12 @@ class HFModel(LLM):
                 # use XAT's load_glm4_model for GLM models
                 logger.info(f"Loading {model_name} with XAT {kwargs.get('attn_metric')} attention (GLM4)")
                 self.model, _ = load_glm4_model(cfg, name_or_path=model_name)
+            elif "yi-9b-200k" in model_name.lower() or ("yi" in model_name.lower() and "200k" in model_name.lower()):
+                from xattn.src.load_yi import load_yi_model, FastPrefillConfig
+                cfg = FastPrefillConfig(**cfg_params)
+                # use XAT's load_yi_model for Yi-9B-200K models
+                logger.info(f"Loading {model_name} with XAT {kwargs.get('attn_metric')} attention (Yi-9B-200K)")
+                self.model, _ = load_yi_model(cfg, name_or_path=model_name)
             
             logger.info(f"Applied {kwargs.get('attn_metric')} custom attention via XAT load_model")
             

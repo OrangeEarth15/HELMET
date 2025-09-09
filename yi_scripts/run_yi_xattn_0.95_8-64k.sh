@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# HELMET LLaMA3.1-8B-Instruct XFlex v6 评估脚本 - threshold 0.95, score_ratio 0.001
-echo "Running HELMET with LLaMA3.1-8B-Instruct XFlex v6 (threshold=0.95, score_ratio=0.001)"
-echo "💡 v6 = golden ratio selection + temperature"
+# HELMET Yi-9B-200K XAttention 评估脚本 - 8k到64k版本 (threshold 0.95)
+echo "Running HELMET with Yi-9B-200K XAttention (8k-64k versions, threshold=0.95)"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -35,33 +34,29 @@ echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
 echo "  TORCH_HOME: $TORCH_HOME"
 echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
 
-# 设置LLaMA3.1-8B-Instruct模型路径
-MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/LLM-Research/Meta-Llama-3.1-8B-Instruct"}
+# 设置Yi-9B-200K模型路径
+MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/01ai/Yi-9B-200K"}
 
-# XFlex v6参数
+# XAttention参数
 THRESHOLD=0.95
 STRIDE=8
-SCORE_RATIO=0.001
-USE_SIMPLE=6  # v6版本：golden ratio selection + temperature
 
 # 设置输出目录
-export OUTPUT_DIR="llama_output/xflex_v6_threshold${THRESHOLD}_score${SCORE_RATIO}_128k"
+export OUTPUT_DIR="yi_output/xattn_threshold${THRESHOLD}_short"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 128k versions with LLaMA3.1-8B-Instruct XFlex v6 (threshold=$THRESHOLD, stride=$STRIDE, score_ratio=$SCORE_RATIO, use_simple=$USE_SIMPLE)"
+echo "Running 8k-64k versions with Yi-9B-200K XAttention (threshold=$THRESHOLD, stride=$STRIDE)"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with LLaMA3.1 XFlex v6 (threshold=$THRESHOLD, score_ratio=$SCORE_RATIO)"
-    mkdir -p $OUTPUT_DIR/$task
+    echo "Running task: $task with Yi-9B-200K XAttention (threshold=$THRESHOLD, short version)"
+    mkdir -p $OUTPUT_DIR/${task}_short
     python eval.py \
-        --config configs/${task}.yaml \
+        --config configs/${task}_short.yaml \
         --model_name_or_path $MODEL_NAME \
-        --attn_metric xflex \
+        --attn_metric xattn \
         --attn_threshold $THRESHOLD \
         --attn_stride $STRIDE \
-        --attn_score_ratio $SCORE_RATIO \
-        --attn_use_simple $USE_SIMPLE \
-        --tag llama_xflex_v6_threshold${THRESHOLD}_score${SCORE_RATIO} \
-        --output_dir $OUTPUT_DIR/$task
+        --tag yi_xattn_threshold${THRESHOLD}_short \
+        --output_dir $OUTPUT_DIR/${task}_short
 done
 
-echo "LLaMA3.1 XFlex v6 (threshold=$THRESHOLD, score_ratio=$SCORE_RATIO) evaluation completed! Results in $OUTPUT_DIR"
+echo "Yi-9B-200K XAttention short versions (threshold=$THRESHOLD) evaluation completed! Results in $OUTPUT_DIR"

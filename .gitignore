@@ -185,4 +185,5 @@ llama_output/
 qwen_output/
 moe_qwen3_output/
 glm4_output/
+yi_output/
 QWEN3_MOE_SETUP_SUMMARY.md

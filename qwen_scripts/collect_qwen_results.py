@@ -51,6 +51,14 @@ def main():
         # FlexPrefill - 不同gamma和tau
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_flex_gamma0.95_tau0.1", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "flex_gamma0.95_tau0.1"), "attention": "flex", "gamma": 0.95, "tau": 0.1},
+        
+        # XFlex v6 - 不同threshold和score_ratio (8k-64k)
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xflex_v6_threshold0.95_score0.001_short", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xflex_v6_threshold0.95_score0.001_short"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001, "seq_length": "8k-64k"},
+        
+        # XFlex v6 - 不同threshold和score_ratio (128k)
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xflex_v6_threshold0.95_score0.001", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xflex_v6_threshold0.95_score0.001_128k"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001, "seq_length": "128k"},
     ]
 
     # 📋 数据集配置文件

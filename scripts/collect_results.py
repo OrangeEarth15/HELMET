@@ -138,6 +138,10 @@ class arguments:
         
         filename = "{args.dataset}_{tag}_{args.test_name}_in{args.input_max_length}_size{args.max_test_samples}_shots{args.shots}_samp{args.do_sample}max{args.generation_max_length}min{args.generation_min_length}t{args.temperature}p{args.top_p}_chat{args.use_chat_template}_{args.seed}.json".format(args=self, tag=tag)
         
+        # 检查是否为短序列配置（tag包含_short后缀）
+        if tag.endswith('_short'):
+            subdir = subdir + '_short'
+        
         path = os.path.join(self.output_dir, subdir, filename)
 
         if os.path.exists(path.replace(".json", "-gpt4eval_o.json")):
