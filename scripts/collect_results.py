@@ -191,6 +191,25 @@ class arguments:
         s = {m : v * (100 if m == "gpt-4-f1" else 1) * (100/3 if m == "gpt-4-score" else 1) for m, v in s.items()}
         print("found scores:", s)
         return s
+    
+    def get_sparsity_info(self):
+        """获取稀疏度信息"""
+        path = self.get_path()
+        if not os.path.exists(path):
+            return None
+        
+        try:
+            with open(path) as f:
+                results = json.load(f)
+            
+            # 检查是否有稀疏度信息
+            sparsity_info = {}
+            if 'avg_sparse_ratio' in results:
+                sparsity_info['avg_sparse_ratio'] = results['avg_sparse_ratio']
+            
+            return sparsity_info if sparsity_info else None
+        except:
+            return None
         
     def get_metric_by_depth(self):
         path = self.get_path()

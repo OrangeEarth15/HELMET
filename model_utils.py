@@ -1404,6 +1404,7 @@ def load_LLM(args):
                 "attn_gamma": args.attn_gamma,
                 "attn_tau": args.attn_tau,
                 "attn_score_ratio": args.attn_score_ratio,
+                "attn_use_simple": args.attn_use_simple,
                 "attn_print_detail": args.attn_print_detail,
             })
 

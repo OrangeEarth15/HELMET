@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# HELMET Yi-9B-200K XFlex v6 评估脚本 - 128k版本 (threshold 0.95, score_ratio 0.001)
-echo "Running HELMET with Yi-9B-200K XFlex v6 (128k versions, threshold=0.95, score_ratio=0.001)"
-echo "💡 v6 = golden ratio selection + temperature"
+# HELMET Qwen2.5-7B-Instruct Full Attention 128K 评估脚本
+echo "Running HELMET with Qwen2.5-7B-Instruct Full Attention (128K)"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -35,33 +34,34 @@ echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
 echo "  TORCH_HOME: $TORCH_HOME"
 echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
 
-# 设置Yi-9B-200K模型路径
-MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/01ai/Yi-9B-200K"}
-
-# XFlex v6参数
-THRESHOLD=0.95
-STRIDE=8
-SCORE_RATIO=0.001
-USE_SIMPLE=6  # v6版本：golden ratio selection + temperature
+# 设置Qwen2.5-7B-Instruct模型路径
+MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/Qwen/Qwen2.5-7B-Instruct"}
 
 # 设置输出目录
-export OUTPUT_DIR="yi_output/xflex_v6_threshold${THRESHOLD}_score${SCORE_RATIO}_128k"
+export OUTPUT_DIR="qwen_output/full_flashattention"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 128k versions with Yi-9B-200K XFlex v6 (threshold=$THRESHOLD, stride=$STRIDE, score_ratio=$SCORE_RATIO, use_simple=$USE_SIMPLE)"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with Yi-9B-200K XFlex v6 (threshold=$THRESHOLD, score_ratio=$SCORE_RATIO, 128k version)"
-    mkdir -p $OUTPUT_DIR/${task}_128k
+    echo "Running task: $task (short) with Qwen2.5 Full Attention"
+    mkdir -p $OUTPUT_DIR/$task
+    python eval.py \
+        --config configs/${task}_short.yaml \
+        --model_name_or_path $MODEL_NAME \
+        --attn_metric full \
+        --tag qwen_full \
+        --output_dir $OUTPUT_DIR/$task
+done
+
+echo "Running 128k versions with Qwen2.5-7B-Instruct Full Attention"
+for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+    echo "Running task: $task with Qwen2.5 Full Attention (128K)"
+    mkdir -p $OUTPUT_DIR/$task
     python eval.py \
         --config configs/${task}.yaml \
         --model_name_or_path $MODEL_NAME \
-        --attn_metric xflex \
-        --attn_threshold $THRESHOLD \
-        --attn_stride $STRIDE \
-        --attn_score_ratio $SCORE_RATIO \
-        --attn_use_simple $USE_SIMPLE \
-        --tag yi_xflex_v6_threshold${THRESHOLD}_score${SCORE_RATIO}_128k \
-        --output_dir $OUTPUT_DIR/${task}_128k
+        --attn_metric full \
+        --tag qwen_full \
+        --output_dir $OUTPUT_DIR/$task
 done
 
-echo "Yi-9B-200K XFlex v6 128k versions (threshold=$THRESHOLD, score_ratio=$SCORE_RATIO) evaluation completed! Results in $OUTPUT_DIR"
+echo "Qwen2.5 Full Attention (128K) evaluation completed! Results in $OUTPUT_DIR"

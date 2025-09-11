@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# HELMET Yi-9B-200K XAttention v6 评估脚本 - 8k到64k版本 (threshold 0.95)
-echo "Running HELMET with Yi-9B-200K XAttention v6 (8k-64k versions, threshold=0.95)"
-echo "💡 v6 = golden ratio selection + temperature"
+# HELMET LLaMA3.1-8B-Instruct XAttention v5 评估脚本 - threshold 0.95
+echo "Running HELMET with LLaMA3.1-8B-Instruct XAttention v5 (threshold=0.95)"
+echo "💡 v5 = head robin"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -35,31 +35,47 @@ echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
 echo "  TORCH_HOME: $TORCH_HOME"
 echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
 
-# 设置Yi-9B-200K模型路径
-MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/01ai/Yi-9B-200K"}
+# 设置LLaMA3.1-8B-Instruct模型路径
+MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/LLM-Research/Meta-Llama-3.1-8B-Instruct"}
 
-# XAttention v6参数
+# XAttention v4参数
 THRESHOLD=0.95
 STRIDE=8
-USE_SIMPLE=6  # v6版本：golden ratio selection + temperature
+USE_SIMPLE=5  # v5版本：head robin
 
 # 设置输出目录
-export OUTPUT_DIR="yi_output/xattn_v6_threshold${THRESHOLD}_short"
+export OUTPUT_DIR="llama_output/xattn_v5_threshold${THRESHOLD}"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 8k-64k versions with Yi-9B-200K XAttention v6 (threshold=$THRESHOLD, stride=$STRIDE, use_simple=$USE_SIMPLE)"
+echo "Running 8k to 64k versions with LLaMA3.1-8B-Instruct XAttention v5 (threshold=$THRESHOLD, stride=$STRIDE, use_simple=$USE_SIMPLE)"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with Yi-9B-200K XAttention v6 (threshold=$THRESHOLD, short version)"
-    mkdir -p $OUTPUT_DIR/${task}_short
+    echo "Running task: $task (short) with LLaMA3.1 XAttention v5 (threshold=$THRESHOLD)"
+    mkdir -p $OUTPUT_DIR/$task
     python eval.py \
         --config configs/${task}_short.yaml \
         --model_name_or_path $MODEL_NAME \
         --attn_metric xattn \
         --attn_threshold $THRESHOLD \
         --attn_stride $STRIDE \
-        --attn_use_simple $USE_SIMPLE \
-        --tag yi_xattn_v6_threshold${THRESHOLD}_short \
-        --output_dir $OUTPUT_DIR/${task}_short
+        --attn_use_simple $USE_SIMPLE  \
+        --tag xattn_v5_threshold${THRESHOLD} \
+        --output_dir $OUTPUT_DIR/$task
 done
 
-echo "Yi-9B-200K XAttention v6 short versions (threshold=$THRESHOLD) evaluation completed! Results in $OUTPUT_DIR"
+
+echo "Running 128k versions with LLaMA3.1-8B-Instruct XAttention v5 (threshold=$THRESHOLD, stride=$STRIDE, use_simple=$USE_SIMPLE)"
+for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+    echo "Running task: $task with LLaMA3.1 XAttention v5 (threshold=$THRESHOLD)"
+    mkdir -p $OUTPUT_DIR/$task
+    python eval.py \
+        --config configs/${task}.yaml \
+        --model_name_or_path $MODEL_NAME \
+        --attn_metric xattn \
+        --attn_threshold $THRESHOLD \
+        --attn_stride $STRIDE \
+        --attn_use_simple $USE_SIMPLE \
+        --tag xattn_v5_threshold${THRESHOLD} \
+        --output_dir $OUTPUT_DIR/$task
+done
+
+echo "LLaMA3.1 XAttention v5 (threshold=$THRESHOLD) evaluation completed! Results in $OUTPUT_DIR"

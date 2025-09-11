@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# HELMET GLM-4-9B-Chat FlexPrefill 评估脚本 - gamma=0.95, tau=0.1
-echo "Running HELMET with GLM-4-9B-Chat FlexPrefill (gamma=0.95, tau=0.1)"
+# HELMET LLaMA3.1-8B-Instruct FlexPrefill 评估脚本 - gamma 0.95, tau 0.1
+echo "Running HELMET with LLaMA3.1-8B-Instruct FlexPrefill (gamma=0.95, tau=0.1)"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -34,22 +34,34 @@ echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
 echo "  TORCH_HOME: $TORCH_HOME"
 echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
 
-# 设置GLM-4-9B-Chat模型路径
-MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/GLM/glm-4-9b-chat"}
+# 设置LLaMA3.1-8B-Instruct模型路径
+MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/LLM-Research/Meta-Llama-3.1-8B-Instruct"}
 
 # FlexPrefill参数
 GAMMA=0.95
 TAU=0.1
-STRIDE=8
 
 # 设置输出目录
-export OUTPUT_DIR="glm4_output/flex_gamma${GAMMA}_tau${TAU}"
+export OUTPUT_DIR="llama_output/flex_gamma${GAMMA}_tau${TAU}"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 128k versions with GLM-4-9B-Chat FlexPrefill (gamma=$GAMMA, tau=$TAU, stride=$STRIDE)"
-for task in "rag"; do
-# for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with GLM-4 FlexPrefill (gamma=$GAMMA, tau=$TAU)"
+echo "Running 8k to 64k versions with LLaMA3.1-8B-Instruct FlexPrefill (gamma=$GAMMA, tau=$TAU)"
+for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+    echo "Running task: $task (short) with LLaMA3.1 FlexPrefill (gamma=$GAMMA, tau=$TAU)"
+    mkdir -p $OUTPUT_DIR/$task
+    python eval.py \
+        --config configs/${task}_short.yaml \
+        --model_name_or_path $MODEL_NAME \
+        --attn_metric flex \
+        --attn_gamma $GAMMA \
+        --attn_tau $TAU \
+        --tag flex_gamma${GAMMA}_tau${TAU} \
+        --output_dir $OUTPUT_DIR/$task
+done
+
+echo "Running 128k versions with LLaMA3.1-8B-Instruct FlexPrefill (gamma=$GAMMA, tau=$TAU)"
+for task in "rerank" "cite"; do
+    echo "Running task: $task with LLaMA3.1 FlexPrefill (gamma=$GAMMA, tau=$TAU)"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \
         --config configs/${task}.yaml \
@@ -57,9 +69,8 @@ for task in "rag"; do
         --attn_metric flex \
         --attn_gamma $GAMMA \
         --attn_tau $TAU \
-        --attn_stride $STRIDE \
-        --tag glm4_flex_gamma${GAMMA}_tau${TAU} \
+        --tag flex_gamma${GAMMA}_tau${TAU} \
         --output_dir $OUTPUT_DIR/$task
 done
 
-echo "GLM-4 FlexPrefill (gamma=$GAMMA, tau=$TAU) evaluation completed! Results in $OUTPUT_DIR"
+echo "LLaMA3.1 FlexPrefill (gamma=$GAMMA, tau=$TAU) evaluation completed! Results in $OUTPUT_DIR"

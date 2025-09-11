@@ -183,6 +183,8 @@ data.tar.gz
 
 llama_output/
 qwen_output/
+llama_output_deprecated/
+qwen_output_deprecated/
 moe_qwen3_output/
 glm4_output/
 yi_output/

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# HELMET Yi-9B-200K Flex 评估脚本 - 8k到64k版本 (gamma 0.9, tau 0.1)
-echo "Running HELMET with Yi-9B-200K Flex (8k-64k versions, gamma=0.9, tau=0.1)"
+# HELMET LLaMA3.1-8B-Instruct Full Attention 128K 评估脚本
+echo "Running HELMET with LLaMA3.1-8B-Instruct Full Attention (128K)"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -34,31 +34,35 @@ echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
 echo "  TORCH_HOME: $TORCH_HOME"
 echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
 
-# 设置Yi-9B-200K模型路径
-MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/01ai/Yi-9B-200K"}
-
-# Flex参数
-GAMMA=0.95
-TAU=0.1
-STRIDE=8
+# 设置LLaMA3.1-8B-Instruct模型路径
+MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/LLM-Research/Meta-Llama-3.1-8B-Instruct"}
 
 # 设置输出目录
-export OUTPUT_DIR="yi_output/flex_gamma${GAMMA}_tau${TAU}_short"
+export OUTPUT_DIR="llama_output/full"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 8k-64k versions with Yi-9B-200K Flex (gamma=$GAMMA, tau=$TAU, stride=$STRIDE)"
+echo "Running 8k to 64k versions with full attention"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with Yi-9B-200K Flex (gamma=$GAMMA, tau=$TAU, short version)"
-    mkdir -p $OUTPUT_DIR/${task}_short
+    echo "Running task: $task (short) with full attention"
+    mkdir -p $OUTPUT_DIR/$task
     python eval.py \
         --config configs/${task}_short.yaml \
         --model_name_or_path $MODEL_NAME \
-        --attn_metric flex \
-        --attn_gamma $GAMMA \
-        --attn_tau $TAU \
-        --attn_stride $STRIDE \
-        --tag yi_flex_gamma${GAMMA}_tau${TAU}_short \
-        --output_dir $OUTPUT_DIR/${task}_short
+        --attn_metric full_flashinfer \
+        --tag full \
+        --output_dir $OUTPUT_DIR/$task
 done
 
-echo "Yi-9B-200K Flex short versions (gamma=$GAMMA, tau=$TAU) evaluation completed! Results in $OUTPUT_DIR"
+echo "Running 128k versions with LLaMA3.1-8B-Instruct Full Attention"
+for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+    echo "Running task: $task with LLaMA3.1 Full Attention (128K)"
+    mkdir -p $OUTPUT_DIR/$task
+    python eval.py \
+        --config configs/${task}.yaml \
+        --model_name_or_path $MODEL_NAME \
+        --attn_metric full \
+        --tag full_flashinfer \
+        --output_dir $OUTPUT_DIR/$task
+done
+
+echo "LLaMA3.1 Full Attention (FlashInfer) evaluation completed! Results in $OUTPUT_DIR"

@@ -1,6 +1,7 @@
 import argparse
 import collections
 import json
+import os
 import re
 import string
 import torch
@@ -543,6 +544,18 @@ def main(args=None):
     if args.claims_nli:
         result["claims_nli"] = compute_claims(normalized_data)
 
+    # 读取稀疏度信息（如果存在）
+    sparsity_file = args.f + ".sparsity"
+    if os.path.exists(sparsity_file):
+        try:
+            with open(sparsity_file, "r") as f:
+                sparsity_info = json.load(f)
+            result.update(sparsity_info)
+            # 删除临时文件
+            os.remove(sparsity_file)
+        except:
+            pass
+    
     print(result)
     with open(args.f + ".score", "w") as f:
         json.dump(result, f, indent=4)

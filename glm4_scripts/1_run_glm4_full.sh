@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# HELMET Yi-9B-200K Full Attention 评估脚本 - 8k到64k版本
-echo "Running HELMET with Yi-9B-200K Full Attention (8k-64k versions)"
+# HELMET GLM-4-9B-Chat Full FlashAttention 评估脚本
+echo "Running HELMET with GLM-4-9B-Chat Full FlashAttention"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -34,23 +34,25 @@ echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
 echo "  TORCH_HOME: $TORCH_HOME"
 echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
 
-# 设置Yi-9B-200K模型路径
-MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/01ai/Yi-9B-200K"}
+# 设置GLM-4-9B-Chat模型路径
+MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/GLM/glm-4-9b-chat"}
 
 # 设置输出目录
-export OUTPUT_DIR="yi_output/full_short"
+export OUTPUT_DIR="glm4_output/full_flashattention"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 8k-64k versions with Yi-9B-200K Full Attention"
-for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with Yi-9B-200K Full Attention (short version)"
-    mkdir -p $OUTPUT_DIR/${task}_short
+echo "Running 128k versions with GLM-4-9B-Chat Full FlashAttention"
+# for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+# for task in "rag" "rerank" ; do
+for task in "recall" "longqa" "summ" "icl" "cite"; do
+    echo "Running task: $task with GLM-4 Full FlashAttention"
+    mkdir -p $OUTPUT_DIR/$task
     python eval.py \
-        --config configs/${task}_short.yaml \
+        --config configs/${task}.yaml \
         --model_name_or_path $MODEL_NAME \
         --attn_metric full \
-        --tag yi_full_short \
-        --output_dir $OUTPUT_DIR/${task}_short
+        --tag glm4_full_flashattention \
+        --output_dir $OUTPUT_DIR/$task
 done
 
-echo "Yi-9B-200K Full Attention short versions evaluation completed! Results in $OUTPUT_DIR"
+echo "GLM-4 Full FlashAttention evaluation completed! Results in $OUTPUT_DIR"

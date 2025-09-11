@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# HELMET Yi-9B-200K Flex 评估脚本 - 128k版本 (gamma 0.9, tau 0.1)
-echo "Running HELMET with Yi-9B-200K Flex (128k versions, gamma=0.9, tau=0.1)"
+# HELMET Qwen2.5-7B-Instruct FlexPrefill 128K 评估脚本 - gamma 0.95, tau 0.1
+echo "Running HELMET with Qwen2.5-7B-Instruct FlexPrefill (gamma=0.95, tau=0.1)"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -27,38 +27,50 @@ mkdir -p "$HF_HUB_CACHE"
 mkdir -p "$TORCH_HOME"
 mkdir -p "$MODELSCOPE_CACHE"
 
-echo "🗂️ Cache directories set to:"
+echo "🗂️ Cache directories set到:"
 echo "  HF_HOME: $HF_HOME"
 echo "  HF_DATASETS_CACHE: $HF_DATASETS_CACHE"
 echo "  HF_HUB_CACHE: $HF_HUB_CACHE"
 echo "  TORCH_HOME: $TORCH_HOME"
 echo "  MODELSCOPE_CACHE: $MODELSCOPE_CACHE"
 
-# 设置Yi-9B-200K模型路径
-MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/01ai/Yi-9B-200K"}
+# 设置Qwen2.5-7B-Instruct模型路径
+MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/Qwen/Qwen2.5-7B-Instruct"}
 
-# Flex参数
+# FlexPrefill参数
 GAMMA=0.95
 TAU=0.1
-STRIDE=8
 
 # 设置输出目录
-export OUTPUT_DIR="yi_output/flex_gamma${GAMMA}_tau${TAU}_128k"
+export OUTPUT_DIR="qwen_output/flex_gamma${GAMMA}_tau${TAU}"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 128k versions with Yi-9B-200K Flex (gamma=$GAMMA, tau=$TAU, stride=$STRIDE)"
+echo "Running 8k to 64k versions with Qwen2.5-7B-Instruct FlexPrefill (gamma=$GAMMA, tau=$TAU)"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with Yi-9B-200K Flex (gamma=$GAMMA, tau=$TAU, 128k version)"
-    mkdir -p $OUTPUT_DIR/${task}_128k
+    echo "Running task: $task (short) with Qwen2.5 FlexPrefill (gamma=$GAMMA, tau=$TAU)"
+    mkdir -p $OUTPUT_DIR/$task
+    python eval.py \
+        --config configs/${task}_short.yaml \
+        --model_name_or_path $MODEL_NAME \
+        --attn_metric flex \
+        --attn_gamma $GAMMA \
+        --attn_tau $TAU \
+        --tag qwen_flex_gamma${GAMMA}_tau${TAU} \
+        --output_dir $OUTPUT_DIR/$task
+done
+
+echo "Running 128k versions with Qwen2.5-7B-Instruct FlexPrefill (gamma=$GAMMA, tau=$TAU)"
+for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+    echo "Running task: $task with Qwen2.5 FlexPrefill (gamma=$GAMMA, tau=$TAU)"
+    mkdir -p $OUTPUT_DIR/$task
     python eval.py \
         --config configs/${task}.yaml \
         --model_name_or_path $MODEL_NAME \
         --attn_metric flex \
         --attn_gamma $GAMMA \
         --attn_tau $TAU \
-        --attn_stride $STRIDE \
-        --tag yi_flex_gamma${GAMMA}_tau${TAU}_128k \
-        --output_dir $OUTPUT_DIR/${task}_128k
+        --tag qwen_flex_gamma${GAMMA}_tau${TAU} \
+        --output_dir $OUTPUT_DIR/$task
 done
 
-echo "Yi-9B-200K Flex 128k versions (gamma=$GAMMA, tau=$TAU) evaluation completed! Results in $OUTPUT_DIR"
+echo "Qwen2.5 FlexPrefill (gamma=$GAMMA, tau=$TAU, 128K) evaluation completed! Results in $OUTPUT_DIR"

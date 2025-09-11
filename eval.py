@@ -94,6 +94,10 @@ def run_test(args, model, dataset, test_file, demo_file):
 
     # then we do all the postprocessing + evaluation
     results = []
+    
+    # 初始化稀疏度累积
+    total_sparse_ratios = []
+    
     for idx, output in enumerate(all_outputs):
         test_item = data["data"][idx]
         input_text = all_input_texts[idx]
@@ -128,6 +132,27 @@ def run_test(args, model, dataset, test_file, demo_file):
         if input_text is None:
             input_text = result['input_text']
         results.append(result)
+        
+        # 收集当前样本的稀疏度
+        sample_sparse_ratios = []
+        # 获取真正的PyTorch模型
+        if hasattr(model, 'model'):
+            pytorch_model = model.model
+        else:
+            pytorch_model = model
+            
+        if hasattr(pytorch_model, 'named_modules'):
+            for name, module in pytorch_model.named_modules():
+                if name.split(".")[-1] == "self_attn":
+                    if hasattr(module, 'sparse_ratio') and module.sparse_ratio != 0:
+                        if hasattr(module.sparse_ratio, 'item'):  # torch.Tensor
+                            sample_sparse_ratios.append(module.sparse_ratio.item())
+                        else:
+                            sample_sparse_ratios.append(float(module.sparse_ratio))
+        
+        if sample_sparse_ratios:
+            sample_avg = sum(sample_sparse_ratios) / len(sample_sparse_ratios)
+            total_sparse_ratios.append(sample_avg)
 
         # print out some examples, we also limit how much we print out since it can get really long
         if idx < 5 or args.debug:
@@ -178,13 +203,21 @@ def run_test(args, model, dataset, test_file, demo_file):
     if args.output_dir is not None:
         with open(output_path, "w") as f:
             json.dump(output, f, indent=4)
+        # 计算数据集平均稀疏度
+        if total_sparse_ratios:
+            dataset_avg_sparse_ratio = sum(total_sparse_ratios) / len(total_sparse_ratios)
+            output["averaged_metrics"]["avg_sparse_ratio"] = dataset_avg_sparse_ratio
+            logger.info(f"Dataset average sparse ratio: {dataset_avg_sparse_ratio:.4f} (from {len(total_sparse_ratios)} samples)")
+        else:
+            output["averaged_metrics"]["avg_sparse_ratio"] = None
+        
         # this makes it easier to parse results, but alce uses a different evaluation script
         if not "alce" in dataset:
             with open(output_path + ".score", "w") as f:
                 json.dump(output["averaged_metrics"], f, indent=4)
         logger.info(f"done, results are written to {output_path}")
 
-    return output_path
+    return output_path, total_sparse_ratios
 
 
 def main():
@@ -216,9 +249,21 @@ def main():
         model.generation_max_length = gen_length
 
         try:
-            output_path = run_test(args, model, dataset, test_file, demo_file)
+            output_path, total_sparse_ratios = run_test(args, model, dataset, test_file, demo_file)
 
             if "alce" in dataset and not args.count_tokens and (not os.path.exists(output_path+".score") or args.overwrite):
+                # 为ALCE保存稀疏度信息到临时文件
+                sparsity_info = {}
+                if total_sparse_ratios:
+                    dataset_avg_sparse_ratio = sum(total_sparse_ratios) / len(total_sparse_ratios)
+                    sparsity_info["avg_sparse_ratio"] = dataset_avg_sparse_ratio
+                    logger.info(f"ALCE dataset average sparse ratio: {dataset_avg_sparse_ratio:.4f} (from {len(total_sparse_ratios)} samples)")
+                else:
+                    sparsity_info["avg_sparse_ratio"] = None
+                
+                with open(output_path + ".sparsity", "w") as f:
+                    json.dump(sparsity_info, f, indent=4)
+                
                 import eval_alce
                 logger.info("running eval_alce.py...")
                 cli_args = ["--f", output_path]

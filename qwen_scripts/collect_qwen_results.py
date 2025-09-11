@@ -137,6 +137,9 @@ def main():
                 continue
                 
             config_found_results += 1
+            # 读取稀疏度信息
+            sparsity_info = args.get_sparsity_info()
+            
             for k, m in metric.items():
                 df.append({
                     **asdict(args), 
@@ -144,7 +147,8 @@ def main():
                     "metric name": k, 
                     "metric": m, 
                     "dataset_simple": dsimple + " " + k, 
-                    "test_data": f"{args.dataset}-{args.test_name}-{args.input_max_length}"
+                    "test_data": f"{args.dataset}-{args.test_name}-{args.input_max_length}",
+                    "avg_sparse_ratio": sparsity_info.get("avg_sparse_ratio") if sparsity_info else None
                 })
         
         print(f"   ✅ 找到 {config_found_results} 个有效结果")
@@ -194,11 +198,18 @@ def main():
         print(f"✅ {model} 结果已保存到: {output_file}")
         print(f"📊 共处理了 {len(model_df)} 个数据点")
         
-        # 显示预览
+        # 显示预览（包含稀疏度）
         print(f"\n📋 {model} 结果预览:")
         available_custom_cols = [col for col in custom_avgs.keys() if col in lf_df.columns]
+        preview_cols = ['input_max_length', 'attention', 'tag']
+        
+        # 添加稀疏度列（如果存在）
+        if 'avg_sparse_ratio' in lf_df.columns:
+            preview_cols.append('avg_sparse_ratio')
+        
         if available_custom_cols:
-            print(lf_df[['input_max_length', 'attention', 'tag'] + available_custom_cols].to_string(index=False))
+            preview_cols.extend(available_custom_cols)
+            print(lf_df[preview_cols].to_string(index=False))
 
     if failed_paths:
         print(f"\n⚠️ 以下 {len(failed_paths)} 个路径的结果未找到:")

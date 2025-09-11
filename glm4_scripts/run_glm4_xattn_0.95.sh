@@ -46,7 +46,8 @@ export OUTPUT_DIR="glm4_output/xattn_threshold${THRESHOLD}"
 mkdir -p $OUTPUT_DIR
 
 echo "Running 128k versions with GLM-4-9B-Chat XAttention (threshold=$THRESHOLD, stride=$STRIDE)"
-for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+# for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+for task in "rag" "rerank" ; do
     echo "Running task: $task with GLM-4 XAttention (threshold=$THRESHOLD)"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \

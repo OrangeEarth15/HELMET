@@ -42,7 +42,8 @@ export OUTPUT_DIR="glm4_output/full_flashattention"
 mkdir -p $OUTPUT_DIR
 
 echo "Running 128k versions with GLM-4-9B-Chat Full FlashAttention"
-for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+# for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+for task in "rag" "rerank" ; do
     echo "Running task: $task with GLM-4 Full FlashAttention"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \
