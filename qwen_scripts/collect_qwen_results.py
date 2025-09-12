@@ -43,10 +43,17 @@ def main():
         # XAttention - 不同threshold
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
+            # XAttention V5 - robin head selection
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v5_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v5_threshold0.95"), "attention": "xattn_v5", "threshold": 0.95},
         
         # XAttention V6 - 不同threshold
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v6_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v6_threshold0.95"), "attention": "xattn_v6", "threshold": 0.95},
+        
+        # XAttention V7 - layer + head robin selection combined
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v7_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v7_threshold0.95"), "attention": "xattn_v7", "threshold": 0.95},
         
         # FlexPrefill - 不同gamma和tau
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_flex_gamma0.95_tau0.1", 
@@ -59,6 +66,10 @@ def main():
         # XFlex v6 - 不同threshold和score_ratio (128k)
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xflex_v6_threshold0.95_score0.001", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "xflex_v6_threshold0.95_score0.001_128k"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001, "seq_length": "128k"},
+        
+        # XFlex v7 - layer + head robin selection combined
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xflex_v7_threshold0.95_score0.001", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xflex_v7_threshold0.95_score0.001"), "attention": "xflex_v7", "threshold": 0.95, "score_ratio": 0.001},
     ]
 
     # 📋 数据集配置文件

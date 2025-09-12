@@ -45,22 +45,22 @@ TAU=0.1
 export OUTPUT_DIR="llama_output/flex_gamma${GAMMA}_tau${TAU}"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 8k to 64k versions with LLaMA3.1-8B-Instruct FlexPrefill (gamma=$GAMMA, tau=$TAU)"
-for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task (short) with LLaMA3.1 FlexPrefill (gamma=$GAMMA, tau=$TAU)"
-    mkdir -p $OUTPUT_DIR/$task
-    python eval.py \
-        --config configs/${task}_short.yaml \
-        --model_name_or_path $MODEL_NAME \
-        --attn_metric flex \
-        --attn_gamma $GAMMA \
-        --attn_tau $TAU \
-        --tag flex_gamma${GAMMA}_tau${TAU} \
-        --output_dir $OUTPUT_DIR/$task
-done
+# echo "Running 8k to 64k versions with LLaMA3.1-8B-Instruct FlexPrefill (gamma=$GAMMA, tau=$TAU)"
+# for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
+#     echo "Running task: $task (short) with LLaMA3.1 FlexPrefill (gamma=$GAMMA, tau=$TAU)"
+#     mkdir -p $OUTPUT_DIR/$task
+#     python eval.py \
+#         --config configs/${task}_short.yaml \
+#         --model_name_or_path $MODEL_NAME \
+#         --attn_metric flex \
+#         --attn_gamma $GAMMA \
+#         --attn_tau $TAU \
+#         --tag flex_gamma${GAMMA}_tau${TAU} \
+#         --output_dir $OUTPUT_DIR/$task
+# done
 
 echo "Running 128k versions with LLaMA3.1-8B-Instruct FlexPrefill (gamma=$GAMMA, tau=$TAU)"
-for task in "rerank" "cite"; do
+for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
     echo "Running task: $task with LLaMA3.1 FlexPrefill (gamma=$GAMMA, tau=$TAU)"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \

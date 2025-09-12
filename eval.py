@@ -44,7 +44,7 @@ def run_test(args, model, dataset, test_file, demo_file):
     output_path = os.path.join(args.output_dir, f"{dataset}_{tag}_{test_name}_in{args.input_max_length}_size{args.max_test_samples}_shots{args.shots}_samp{args.do_sample}max{args.generation_max_length}min{args.generation_min_length}t{args.temperature}p{args.top_p}_chat{args.use_chat_template}_{args.seed}.json")
     if os.path.exists(output_path) and not args.overwrite and not args.debug:
         logger.info(f"{output_path} already exists, skipping...")
-        return output_path
+        return output_path, []
 
     random.seed(args.seed)
     data = load_data(args, dataset, test_file, demo_file)
@@ -178,11 +178,11 @@ def run_test(args, model, dataset, test_file, demo_file):
 
     if args.count_tokens:
         logger.info(f"----{dataset}----\nAverage input length: {np.mean(metrics['input_len']):.02f}, std input length: {np.std(metrics['input_len']):.02f}, max input length: {max(metrics['input_len'])}, min input length: {min(metrics['input_len'])}\n----returning----")
-        return output_path
+        return output_path, []
 
     if len(results) == 0:
         logger.error("No results to evaluate, something went wrong, returning...")
-        return output_path
+        return output_path, []
 
     averaged_metrics = {k: np.mean(v)*(100 if "_len" not in k else 1) for k, v in metrics.items()}
 

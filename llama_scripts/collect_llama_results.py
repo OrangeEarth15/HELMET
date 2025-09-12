@@ -34,32 +34,44 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     helmet_root = os.path.dirname(script_dir)
     
-    # 🎯 XAT Attention配置 - 只评估非deprecated的配置
+    # 🎯 XAT Attention配置 - 基于实际存在的输出目录
     # 使用绝对路径
     xat_configs = [
-        # Full FlashInfer Attention
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "full_flashinfer", 
-         "output_dir": os.path.join(helmet_root, "llama_output", "full_flashinfer"), "attention": "full"},
+        # Full FlashInfer Attention - 使用实际文件中的tag
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "full", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "full"), "attention": "full"},
         
         # XAttention - 不同threshold
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
         
+        # XAttention V4 - 添加缺失的配置
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v4_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v4_threshold0.95"), "attention": "xattn_v4", "threshold": 0.95},
+        
+        # XAttention V5 - 添加缺失的配置
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v5_threshold0.95"), "attention": "xattn_v5", "threshold": 0.95},
+        
         # XAttention V6 - 不同threshold
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v6_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v6_threshold0.95"), "attention": "xattn_v6", "threshold": 0.95},
+        
+        # XAttention V7 - layer + head robin selection combined
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xattn_v7_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v7_threshold0.95"), "attention": "xattn_v7", "threshold": 0.95},
         
         # FlexPrefill - 不同gamma和tau
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "flex_gamma0.95_tau0.1", 
          "output_dir": os.path.join(helmet_root, "llama_output", "flex_gamma0.95_tau0.1"), "attention": "flex", "gamma": 0.95, "tau": 0.1},
         
-        # XFlex v6 - 不同threshold和score_ratio (8k-64k)
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xflex_v6_threshold0.95_score0.001_short", 
-         "output_dir": os.path.join(helmet_root, "llama_output", "xflex_v6_threshold0.95_score0.001_short"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001, "seq_length": "8k-64k"},
-        
-        # XFlex v6 - 不同threshold和score_ratio (128k)
+        # XFlex v6 - 修正tag名，使用实际文件中的tag
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xflex_v6_threshold0.95_score0.001", 
-         "output_dir": os.path.join(helmet_root, "llama_output", "xflex_v6_threshold0.95_score0.001_128k"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001, "seq_length": "128k"},
+         "output_dir": os.path.join(helmet_root, "llama_output", "xflex_v6_threshold0.95_score0.001"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001},
+        
+        # XFlex v7 - layer + head robin selection combined
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xflex_v7_threshold0.95_score0.001", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xflex_v7_threshold0.95_score0.001"), "attention": "xflex_v7", "threshold": 0.95, "score_ratio": 0.001},
     ]
 
     # 📋 数据集配置文件
