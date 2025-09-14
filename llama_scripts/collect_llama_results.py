@@ -45,7 +45,11 @@ def main():
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
         
-        # XAttention V1 - global selection + v8 layerwise robin (缺失的配置)
+        # XAttention Single - 对应xattn_single_threshold0.95目录
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_single_threshold0.95"), "attention": "xattn_single", "threshold": 0.95},
+        
+        # XAttention V1 - global selection + v8 layerwise robin
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v1_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v1_threshold0.95"), "attention": "xattn_v1", "threshold": 0.95},
         
@@ -57,9 +61,17 @@ def main():
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v5_threshold0.95"), "attention": "xattn_v5", "threshold": 0.95},
         
+        # XAttention Singele V5 - 对应xattn_singele_v5_threshold0.95目录（注意拼写）
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_singele_v5_threshold0.95"), "attention": "xattn_singele_v5", "threshold": 0.95},
+        
         # XAttention V6 - 不同threshold
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v6_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v6_threshold0.95"), "attention": "xattn_v6", "threshold": 0.95},
+        
+        # XAttention Single V6 - 对应xattn_single_v6_threshold0.95目录
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v6_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_single_v6_threshold0.95"), "attention": "xattn_single_v6", "threshold": 0.95},
         
         # XAttention V7 - layer + head robin selection combined
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xattn_v7_threshold0.95", 
@@ -77,9 +89,12 @@ def main():
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xflex_v6_threshold0.95_score0.001", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xflex_v6_threshold0.95_score0.001"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001},
         
-        # XFlex v7 - layer + head robin selection combined
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xflex_v7_threshold0.95_score0.001", 
-         "output_dir": os.path.join(helmet_root, "llama_output", "xflex_v7_threshold0.95_score0.001"), "attention": "xflex_v7", "threshold": 0.95, "score_ratio": 0.001},
+        # # 测试目录 - test_xattn_v5_threshold0.95 和 test2_xattn_v5_threshold0.95
+        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
+        #  "output_dir": os.path.join(helmet_root, "llama_output", "test_xattn_v5_threshold0.95"), "attention": "test_xattn_v5", "threshold": 0.95},
+        
+        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
+        #  "output_dir": os.path.join(helmet_root, "llama_output", "test2_xattn_v5_threshold0.95"), "attention": "test2_xattn_v5", "threshold": 0.95},
     ]
 
     # 📋 数据集配置文件

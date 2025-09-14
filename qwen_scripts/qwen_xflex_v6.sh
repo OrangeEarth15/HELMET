@@ -51,7 +51,7 @@ mkdir -p $OUTPUT_DIR
 echo "Running 8k-64k versions with Qwen2.5-7B-Instruct XFlex v6 (threshold=$THRESHOLD, stride=$STRIDE, score_ratio=$SCORE_RATIO, use_simple=$USE_SIMPLE)"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
     echo "Running task: $task with Qwen2.5 XFlex v6 (threshold=$THRESHOLD, score_ratio=$SCORE_RATIO, short version)"
-    mkdir -p $OUTPUT_DIR/${task}_short
+    mkdir -p $OUTPUT_DIR/${task}
     python eval.py \
         --config configs/${task}_short.yaml \
         --model_name_or_path $MODEL_NAME \
@@ -61,7 +61,7 @@ for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
         --attn_score_ratio $SCORE_RATIO \
         --attn_use_simple $USE_SIMPLE \
         --tag qwen_xflex_v6_threshold${THRESHOLD}_score${SCORE_RATIO} \
-        --output_dir $OUTPUT_DIR/${task}_short
+        --output_dir $OUTPUT_DIR/${task}
 done
 
 echo "Running 128k versions with Qwen2.5-7B-Instruct XFlex v6 (threshold=$THRESHOLD, stride=$STRIDE, score_ratio=$SCORE_RATIO, use_simple=$USE_SIMPLE)"
