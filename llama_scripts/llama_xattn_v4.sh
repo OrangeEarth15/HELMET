@@ -74,7 +74,7 @@ for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
         --attn_threshold $THRESHOLD \
         --attn_stride $STRIDE \
         --attn_use_simple $USE_SIMPLE \
-        --tag xattn_v6_threshold${THRESHOLD} \
+        --tag xattn_v4_threshold${THRESHOLD} \
         --output_dir $OUTPUT_DIR/$task
 done
 

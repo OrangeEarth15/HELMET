@@ -34,16 +34,17 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     helmet_root = os.path.dirname(script_dir)
     
-    # 🎯 Qwen XAT Attention配置 - 根据实际存在的目录调整
+    # 🎯 Qwen XAT Attention配置 - 基于实际存在的输出目录
     qwen_configs = [
-        # Full FlashInfer Attention
-        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_full_flashattention", 
-         "output_dir": os.path.join(helmet_root, "qwen_output", "full_flashattention"), "attention": "full"},
+        # Full FlashInfer Attention - 修正目录名和tag
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_full", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "full"), "attention": "full"},
         
         # XAttention - 不同threshold
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
-            # XAttention V5 - robin head selection
+        
+        # XAttention V5 - robin head selection
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v5_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v5_threshold0.95"), "attention": "xattn_v5", "threshold": 0.95},
         
@@ -55,21 +56,17 @@ def main():
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v7_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v7_threshold0.95"), "attention": "xattn_v7", "threshold": 0.95},
         
+        # XAttention V8 - layerwise robin with correct regrouping logic
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v8_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v8_threshold0.95"), "attention": "xattn_v8", "threshold": 0.95},
+        
         # FlexPrefill - 不同gamma和tau
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_flex_gamma0.95_tau0.1", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "flex_gamma0.95_tau0.1"), "attention": "flex", "gamma": 0.95, "tau": 0.1},
         
-        # XFlex v6 - 不同threshold和score_ratio (8k-64k)
-        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xflex_v6_threshold0.95_score0.001_short", 
-         "output_dir": os.path.join(helmet_root, "qwen_output", "xflex_v6_threshold0.95_score0.001_short"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001, "seq_length": "8k-64k"},
-        
-        # XFlex v6 - 不同threshold和score_ratio (128k)
+        # XFlex v6 - 修正tag名，使用实际文件中的tag
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xflex_v6_threshold0.95_score0.001", 
-         "output_dir": os.path.join(helmet_root, "qwen_output", "xflex_v6_threshold0.95_score0.001_128k"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001, "seq_length": "128k"},
-        
-        # XFlex v7 - layer + head robin selection combined
-        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xflex_v7_threshold0.95_score0.001", 
-         "output_dir": os.path.join(helmet_root, "qwen_output", "xflex_v7_threshold0.95_score0.001"), "attention": "xflex_v7", "threshold": 0.95, "score_ratio": 0.001},
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xflex_v6_threshold0.95_score0.001"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001},
     ]
 
     # 📋 数据集配置文件

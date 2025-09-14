@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# HELMET LLaMA3.1-8B-Instruct Full Attention 128K 评估脚本
-echo "Running HELMET with LLaMA3.1-8B-Instruct Full Attention (128K)"
+# HELMET LLaMA3.1-8B-Instruct Full FlashAttention 评估脚本
+echo "Running HELMET with LLaMA3.1-8B-Instruct Full FlashAttention"
+echo "💡 Full = Complete FlashAttention without sparsity"
 
 # 切换到HELMET根目录
 cd "$(dirname "$0")/.."
@@ -41,28 +42,28 @@ MODEL_NAME=${1:-"/home/scratch.sarawang_ent/modelscope_cache/LLM-Research/Meta-L
 export OUTPUT_DIR="llama_output/full"
 mkdir -p $OUTPUT_DIR
 
-echo "Running 8k to 64k versions with full attention"
+echo "Running 8k to 64k versions with LLaMA3.1-8B-Instruct Full FlashAttention"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task (short) with full attention"
-    mkdir -p $OUTPUT_DIR/$task
+    echo "Running task: $task (short) with LLaMA3.1 Full FlashAttention"
+    mkdir -p $OUTPUT_DIR/${task}
     python eval.py \
         --config configs/${task}_short.yaml \
         --model_name_or_path $MODEL_NAME \
-        --attn_metric full_flashinfer \
+        --attn_metric full \
         --tag full \
-        --output_dir $OUTPUT_DIR/$task
+        --output_dir $OUTPUT_DIR/${task}
 done
 
-echo "Running 128k versions with LLaMA3.1-8B-Instruct Full Attention"
+echo "Running 128k versions with LLaMA3.1-8B-Instruct Full FlashAttention"
 for task in "recall" "rag" "longqa" "summ" "icl" "rerank" "cite"; do
-    echo "Running task: $task with LLaMA3.1 Full Attention (128K)"
+    echo "Running task: $task with LLaMA3.1 Full FlashAttention"
     mkdir -p $OUTPUT_DIR/$task
     python eval.py \
         --config configs/${task}.yaml \
         --model_name_or_path $MODEL_NAME \
         --attn_metric full \
-        --tag full_flashinfer \
+        --tag full \
         --output_dir $OUTPUT_DIR/$task
 done
 
-echo "LLaMA3.1 Full Attention (FlashInfer) evaluation completed! Results in $OUTPUT_DIR"
+echo "LLaMA3.1 Full FlashAttention evaluation completed! Results in $OUTPUT_DIR"

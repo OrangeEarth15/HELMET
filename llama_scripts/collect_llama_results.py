@@ -45,6 +45,10 @@ def main():
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
         
+        # XAttention V1 - global selection + v8 layerwise robin (缺失的配置)
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v1_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v1_threshold0.95"), "attention": "xattn_v1", "threshold": 0.95},
+        
         # XAttention V4 - 添加缺失的配置
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v4_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v4_threshold0.95"), "attention": "xattn_v4", "threshold": 0.95},
@@ -60,6 +64,10 @@ def main():
         # XAttention V7 - layer + head robin selection combined
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xattn_v7_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v7_threshold0.95"), "attention": "xattn_v7", "threshold": 0.95},
+        
+        # XAttention V8 - layerwise robin with correct regrouping logic
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xattn_v8_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v8_threshold0.95"), "attention": "xattn_v8", "threshold": 0.95},
         
         # FlexPrefill - 不同gamma和tau
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "flex_gamma0.95_tau0.1", 
