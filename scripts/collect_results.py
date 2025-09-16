@@ -195,7 +195,7 @@ def create_multi_header_csv(df, output_file):
             header2.append("")
             header3.append(col)
         elif "|" in col:
-            major_cat, task = col.split("|")
+            major_cat, task = col.split("|", 1)  # 只分割一次，防止task名中有|
             header1.append(major_cat)
             
             # 根据任务名称进一步分类
@@ -205,22 +205,34 @@ def create_multi_header_csv(df, output_file):
                 elif "qampari" in task:
                     header2.append("QAMPARI")
                 else:
-                    header2.append("")
+                    header2.append("Summary")
             elif major_cat == "Recall":
                 if "niah" in task:
                     header2.append("NIAH")
-                else:
+                elif "json_kv" in task:
                     header2.append("KeyValue")
+                else:
+                    header2.append("Summary")
             elif major_cat == "LongQA":
                 if "narrativeqa" in task:
                     header2.append("Narrative")
-                else:
+                elif "infbench" in task:
                     header2.append("InfBench")
+                else:
+                    header2.append("Summary")
             elif major_cat == "ICL":
                 if "trec" in task:
                     header2.append("TREC")
-                else:
+                elif task in ["banking77", "clinic150", "nlu"]:
                     header2.append("Other")
+                else:
+                    header2.append("Summary")
+            elif major_cat == "RAG":
+                header2.append("")  # RAG下面直接是各个数据集
+            elif major_cat == "Re-rank":
+                header2.append("")  # Re-rank下面直接是msmarco
+            elif major_cat == "Summ":
+                header2.append("")  # Summ下面直接是各个任务
             else:
                 header2.append("")
                 
@@ -229,7 +241,12 @@ def create_multi_header_csv(df, output_file):
             header1.append(col)
             header2.append("Summary")
             header3.append("avg_score")
+        elif col == "Ours":
+            header1.append("Ours")
+            header2.append("")
+            header3.append("")
         else:
+            # 这些是原始的详细指标列
             header1.append("Other")
             header2.append("")
             header3.append(col)
