@@ -181,15 +181,24 @@ def create_hierarchical_csv(df, output_file):
     return lf_df
 
 def create_multi_header_csv(df, output_file):
-    """创建极其层次化的多级表头CSV文件"""
+    """创建极其层次化的多级表头CSV文件，只包含层次化的列"""
     import pandas as pd
+    
+    # 只选择我们想要的列：基础配置列 + 层次化列 + 汇总列
+    base_cols = ["input_max_length", "attention", "tag"]
+    hierarchical_cols = [col for col in df.columns if "|" in col]
+    summary_cols = [col for col in df.columns if col in ["Recall", "RAG", "ICL", "Cite", "Re-rank", "LongQA", "Summ", "Ours"]]
+    
+    # 选择的列
+    selected_cols = base_cols + hierarchical_cols + summary_cols
+    selected_df = df[selected_cols].copy()
     
     # 准备三级表头
     header1 = []  # 第一级表头（大类）
     header2 = []  # 第二级表头（子类别）
     header3 = []  # 第三级表头（具体指标）
     
-    for col in df.columns:
+    for col in selected_df.columns:
         if col in ["input_max_length", "attention", "tag"]:
             header1.append("Config")
             header2.append("")
@@ -245,20 +254,22 @@ def create_multi_header_csv(df, output_file):
             header1.append("Ours")
             header2.append("")
             header3.append("")
-        else:
-            # 这些是原始的详细指标列
-            header1.append("Other")
-            header2.append("")
-            header3.append(col)
     
-    # 创建三级表头的DataFrame
-    multi_header_df = pd.DataFrame([header1, header2, header3])
-    result_df = pd.concat([multi_header_df, df], ignore_index=True)
+    # 直接写入CSV文件，确保列数一致
+    with open(output_file, 'w', newline='', encoding='utf-8') as f:
+        import csv
+        writer = csv.writer(f)
+        
+        # 写入三级表头
+        writer.writerow(header1)
+        writer.writerow(header2)
+        writer.writerow(header3)
+        
+        # 写入数据行
+        for _, row in selected_df.iterrows():
+            writer.writerow(row.tolist())
     
-    # 保存到文件
-    result_df.to_csv(output_file, index=False, header=False)
-    
-    print(f"Created extremely hierarchical CSV with 3-level headers: {output_file}")
+    print(f"Created clean hierarchical CSV with {len(selected_cols)} columns: {output_file}")
 
 @dataclass
 class arguments:
