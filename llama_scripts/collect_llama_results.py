@@ -222,45 +222,32 @@ def main():
         print(f"\n🔄 处理模型: {model}")
         model_df = all_df[all_df['model'] == model].copy()
         
-        # 创建透视表
-        lf_df = model_df.pivot_table(
-            index=["input_max_length", "attention", "tag"], 
-            columns="dataset_simple", 
-            values="metric", 
-            sort=False
-        )
-        lf_df = lf_df.reset_index()
-
-        # 计算自定义平均值
-        for k, v in custom_avgs.items():
-            available_cols = [col for col in v if col in lf_df.columns]
-            if available_cols:
-                lf_df[k] = lf_df[available_cols].mean(axis=1)
-            else:
-                print(f"⚠️ 跳过 {k}: 缺少必要的列")
-
-        # 按序列长度优先排序，然后按attention类型排序
-        lf_df = lf_df.sort_values(['input_max_length', 'attention', 'tag'], ascending=[True, True, True])
-
-        # 保存结果 - 为每个模型生成单独的CSV文件
+        # 使用层次化CSV生成函数
         model_name = model.replace("Meta-", "").replace("-", "_").lower()
         output_file = os.path.join(helmet_root, f"{model_name}_results_summary.csv")
-        lf_df.to_csv(output_file, index=False)
+        lf_df = collect_results.create_hierarchical_csv(model_df, output_file)
         
         print(f"✅ {model} 结果已保存到: {output_file}")
         print(f"📊 共处理了 {len(model_df)} 个数据点")
         
-        # 显示预览（包含稀疏度）
+        # 显示预览（只显示大类聚合结果，保持简洁）
         print(f"\n📋 {model} 结果预览:")
-        available_custom_cols = [col for col in custom_avgs.keys() if col in lf_df.columns]
         preview_cols = ['input_max_length', 'attention', 'tag']
         
         # 添加稀疏度列（如果存在）
         if 'avg_sparse_ratio' in lf_df.columns:
             preview_cols.append('avg_sparse_ratio')
         
+        # 只添加传统的大类聚合列，不显示详细的层次化列
+        available_custom_cols = [col for col in custom_avgs.keys() if col in lf_df.columns]
         preview_cols.extend(available_custom_cols)
+        
         print(lf_df[preview_cols].to_string(index=False))
+        
+        # 显示层次化文件信息
+        hierarchical_cols = [col for col in lf_df.columns if '|' in col]
+        if hierarchical_cols:
+            print(f"\n📊 详细层次化结果包含 {len(hierarchical_cols)} 个子任务指标，已保存到 *_hierarchical.csv 文件")
 
     if failed_paths:
         print(f"\n⚠️ 以下 {len(failed_paths)} 个路径的结果未找到:")
