@@ -45,13 +45,13 @@ def main():
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
         
-        # XAttention Single - 对应xattn_single_threshold0.95目录
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
-         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_single_threshold0.95"), "attention": "xattn_single", "threshold": 0.95},
+        # # XAttention Single - 对应xattn_single_threshold0.95目录
+        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
+        #  "output_dir": os.path.join(helmet_root, "llama_output", "xattn_single_threshold0.95"), "attention": "xattn_single", "threshold": 0.95},
         
-        # XAttention V1 - global selection + v8 layerwise robin
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v1_threshold0.95", 
-         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v1_threshold0.95"), "attention": "xattn_v1", "threshold": 0.95},
+        # # XAttention V1 - global selection + v8 layerwise robin
+        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v1_threshold0.95", 
+        #  "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v1_threshold0.95"), "attention": "xattn_v1", "threshold": 0.95},
         
         # XAttention V4 - 添加缺失的配置
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v4_threshold0.95", 
@@ -61,17 +61,17 @@ def main():
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v5_threshold0.95"), "attention": "xattn_v5", "threshold": 0.95},
         
-        # XAttention Singele V5 - 对应xattn_singele_v5_threshold0.95目录（注意拼写）
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
-         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_singele_v5_threshold0.95"), "attention": "xattn_singele_v5", "threshold": 0.95},
+        # # XAttention Singele V5 - 对应xattn_singele_v5_threshold0.95目录（注意拼写）
+        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
+        #  "output_dir": os.path.join(helmet_root, "llama_output", "xattn_singele_v5_threshold0.95"), "attention": "xattn_singele_v5", "threshold": 0.95},
         
         # XAttention V6 - 不同threshold
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v6_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v6_threshold0.95"), "attention": "xattn_v6", "threshold": 0.95},
         
-        # XAttention Single V6 - 对应xattn_single_v6_threshold0.95目录
-        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v6_threshold0.95", 
-         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_single_v6_threshold0.95"), "attention": "xattn_single_v6", "threshold": 0.95},
+        # # XAttention Single V6 - 对应xattn_single_v6_threshold0.95目录
+        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v6_threshold0.95", 
+        #  "output_dir": os.path.join(helmet_root, "llama_output", "xattn_single_v6_threshold0.95"), "attention": "xattn_single_v6", "threshold": 0.95},
         
         # XAttention V7 - layer + head robin selection combined
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xattn_v7_threshold0.95", 
@@ -80,6 +80,11 @@ def main():
         # XAttention V8 - layerwise robin with correct regrouping logic
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xattn_v8_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v8_threshold0.95"), "attention": "xattn_v8", "threshold": 0.95},
+
+        # XAttention V9 - layerwise robin with correct regrouping logic
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xattn_v9_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v9_threshold0.95"), "attention": "xattn_v9", "threshold": 0.95},
+        
         
         # FlexPrefill - 不同gamma和tau
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "flex_gamma0.95_tau0.1", 
@@ -233,6 +238,9 @@ def main():
                 lf_df[k] = lf_df[available_cols].mean(axis=1)
             else:
                 print(f"⚠️ 跳过 {k}: 缺少必要的列")
+
+        # 按序列长度优先排序，然后按attention类型排序
+        lf_df = lf_df.sort_values(['input_max_length', 'attention', 'tag'], ascending=[True, True, True])
 
         # 保存结果 - 为每个模型生成单独的CSV文件
         model_name = model.replace("Meta-", "").replace("-", "_").lower()

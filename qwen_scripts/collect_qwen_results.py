@@ -59,6 +59,10 @@ def main():
         # XAttention V8 - layerwise robin with correct regrouping logic
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v8_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v8_threshold0.95"), "attention": "xattn_v8", "threshold": 0.95},
+
+        # XAttention V9
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v9_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v9_threshold0.95"), "attention": "xattn_v9", "threshold": 0.95},
         
         # FlexPrefill - 不同gamma和tau
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_flex_gamma0.95_tau0.1", 
@@ -197,6 +201,9 @@ def main():
                 lf_df[k] = lf_df[available_cols].mean(axis=1)
             else:
                 print(f"⚠️ 跳过 {k}: 缺少必要的列")
+
+        # 按序列长度优先排序，然后按attention类型排序
+        lf_df = lf_df.sort_values(['input_max_length', 'attention', 'tag'], ascending=[True, True, True])
 
         # 保存结果 - 为每个模型生成单独的CSV文件
         model_name = model.replace("Qwen", "qwen").replace("-", "_").replace(".", "").lower()
