@@ -44,9 +44,17 @@ def main():
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
         
+        # XAttention Single - 对应qwen_xattn_single.sh
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_single_threshold0.95"), "attention": "xattn_single", "threshold": 0.95},
+        
         # XAttention V5 - robin head selection
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v5_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v5_threshold0.95"), "attention": "xattn_v5", "threshold": 0.95},
+        
+        # XAttention V5 Single - 对应qwen_xattn_v5_single.sh
+        {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v5_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "qwen_output", "xattn_v5_single_threshold0.95"), "attention": "xattn_v5_single", "threshold": 0.95},
         
         # XAttention V6 - 不同threshold
         {"model": "Qwen2.5-7B-Instruct", "tag": "qwen_xattn_v6_threshold0.95", 

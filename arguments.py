@@ -66,7 +66,7 @@ def parse_arguments():
     parser.add_argument("--thinking", action="store_true", help="for reasoning models (e.g., Deepseek-r1), when this is set, we allow the model to generate an additional 32k tokens and exclude all texts between <think>*</think> from the output for evaluation")
 
     # fast prefill / sparse attention settings (xattn/flex/xflex/tattn)
-    parser.add_argument("--attn_metric", type=str, default=None, choices=["xattn", "flex", "xflex", "tattn", "full", "minfer", None], help="enable custom attention optimization; None disables")
+    parser.add_argument("--attn_metric", type=str, default=None, choices=["xattn", "flex", "xflex", "tattn", "tri", "full", "minfer", None], help="enable custom attention optimization; None disables")
     parser.add_argument("--attn_stride", type=int, default=8, help="fused attention stride for xattn/xflex/tattn")
     parser.add_argument("--attn_threshold", type=float, default=None, help="global threshold; None uses per-layer defaults")
     parser.add_argument("--attn_gamma", type=float, default=0.9, help="gamma for flex")

@@ -13,7 +13,7 @@ dataset_to_metrics = {
     "triviaqa": "substring_exact_match",
     "hotpotqa": "substring_exact_match",
     
-    "narrativeqa": ["gpt-4-score"],
+    # "narrativeqa": ["gpt-4-score"],  # 需要GPT-4评估，暂时忽略
     "msmarco_rerank_psg": "NDCG@10",
     
     "trec_coarse": "exact_match",
@@ -23,7 +23,7 @@ dataset_to_metrics = {
     "nlu": "exact_match",
     
     "qmsum": "rougeL_recall",
-    "multi_lexsum": ["gpt-4-f1"],
+    # "multi_lexsum": ["gpt-4-f1"],  # 需要GPT-4评估，暂时忽略
     
     "ruler_niah_s_1": "ruler_recall",
     "ruler_niah_s_2": "ruler_recall",
@@ -42,7 +42,7 @@ dataset_to_metrics = {
     "infbench_qa": ["rougeL_f1"],
     "infbench_choice": ["exact_match"],
     # "infbench_sum": ["gpt-4-f1"],
-    "infbench_sum_eng": ["gpt-4-f1"],
+    # "infbench_sum_eng": ["gpt-4-f1"],  # 需要GPT-4评估，暂时忽略
     
     "alce_asqa": ["str_em", "citation_rec", "citation_prec"],
     "alce_qampari": ["qampari_rec_top5", "citation_rec", "citation_prec"],
@@ -82,13 +82,13 @@ hierarchical_tasks = {
         "msmarco_psg": ["msmarco_rerank_psg NDCG@10"],
     },
     "LongQA": {
-        "narrativeqa": ["narrativeqa gpt-4-score"],
+        # "narrativeqa": ["narrativeqa gpt-4-score"],  # 需要GPT-4评估，暂时忽略
         "infbench_qa": ["infbench_qa rougeL_f1"],
         "infbench_choice": ["infbench_choice exact_match"],
     },
     "Summ": {
-        "infbench_sum_eng": ["infbench_sum_eng gpt-4-f1"],
-        "multi_lexsum": ["multi_lexsum gpt-4-f1"],
+        # "infbench_sum_eng": ["infbench_sum_eng gpt-4-f1"],  # 需要GPT-4评估，暂时忽略
+        # "multi_lexsum": ["multi_lexsum gpt-4-f1"],  # 需要GPT-4评估，暂时忽略
     },
 }
 
@@ -99,11 +99,12 @@ custom_avgs = {
     "ICL": ['trec_coarse exact_match', 'trec_fine exact_match', 'banking77 exact_match', 'clinic150 exact_match', 'nlu exact_match'],
     "Cite": ['alce_asqa str_em', 'alce_asqa citation_rec', 'alce_asqa citation_prec', 'alce_qampari qampari_rec_top5', 'alce_qampari citation_rec', 'alce_qampari citation_prec', ],
     "Re-rank": ['msmarco_rerank_psg NDCG@10', ],
-    "LongQA": ['narrativeqa gpt-4-score', 'infbench_qa rougeL_f1', 'infbench_choice exact_match', ],
+    # "LongQA": ['narrativeqa gpt-4-score', 'infbench_qa rougeL_f1', 'infbench_choice exact_match', ],
+    "LongQA": ['infbench_qa rougeL_f1', 'infbench_choice exact_match', ],
     # "Summ": ['infbench_sum gpt-4-f1', 'multi_lexsum gpt-4-f1', ],
-    "Summ": ['infbench_sum_eng gpt-4-f1', 'multi_lexsum gpt-4-f1', ],
+    # "Summ": ['infbench_sum_eng gpt-4-f1', 'multi_lexsum gpt-4-f1', ],
     # "RULER": ['ruler_niah_s_1 ruler_recall', 'ruler_niah_s_2 ruler_recall', 'ruler_niah_s_3 ruler_recall', 'ruler_niah_mk_1 ruler_recall', 'ruler_niah_mk_2 ruler_recall', 'ruler_niah_mk_3 ruler_recall', 'ruler_niah_mq ruler_recall', 'ruler_niah_mv ruler_recall', 'ruler_cwe ruler_recall', 'ruler_fwe ruler_recall', 'ruler_vt ruler_recall', 'ruler_qa_1 substring_exact_match', 'ruler_qa_2 substring_exact_match'],
-    "Ours": ['Recall', 'RAG', 'ICL', 'Cite', 'Re-rank', 'LongQA', 'Summ'],
+    "Ours": ['Recall', 'RAG', 'ICL', 'Cite', 'Re-rank', 'LongQA'],  # 移除了Summ因为需要GPT-4评估
 }
 
 def flatten_hierarchical_tasks(hierarchical_tasks):
@@ -128,6 +129,24 @@ def create_hierarchical_csv(df, output_file):
         sort=False
     ).reset_index()
     
+    # 生成稀疏度透视表（如果存在稀疏度数据）
+    sparsity_df = None
+    if 'avg_sparse_ratio' in df.columns and df['avg_sparse_ratio'].notna().any():
+        # 创建稀疏度数据透视表，需要特殊处理'null'值
+        # 先创建一个副本，将'null'字符串转换为特殊标记以便pivot_table处理
+        df_sparsity = df.copy()
+        df_sparsity['avg_sparse_ratio'] = df_sparsity['avg_sparse_ratio'].replace('null', -999)  # 临时标记
+        
+        sparsity_df = df_sparsity.pivot_table(
+            index=["input_max_length", "attention", "tag"], 
+            columns="dataset_simple", 
+            values="avg_sparse_ratio", 
+            sort=False
+        ).reset_index()
+        
+        # 将临时标记转换回'null'
+        sparsity_df = sparsity_df.replace(-999, 'null')
+    
     # 计算层次化的平均值
     hierarchical_avgs = flatten_hierarchical_tasks(hierarchical_tasks)
     
@@ -142,9 +161,35 @@ def create_hierarchical_csv(df, output_file):
         available_cols = [col for col in v if col in lf_df.columns]
         if available_cols:
             lf_df[k] = lf_df[available_cols].mean(axis=1)
+            
+            # 计算对应的稀疏度平均值
+            if sparsity_df is not None:
+                sparsity_cols = [col for col in available_cols if col in sparsity_df.columns]
+                if sparsity_cols:
+                    # 对稀疏度进行聚合，需要特殊处理'null'值
+                    def aggregate_sparsity(row):
+                        values = []
+                        for col in sparsity_cols:
+                            val = row[col]
+                            if pd.notna(val) and val != 'null':
+                                values.append(val)
+                        if not values:
+                            # 如果所有值都是null或NaN，检查是否都是'null'（full attention情况）
+                            null_count = sum(1 for col in sparsity_cols if row[col] == 'null')
+                            if null_count > 0:
+                                return 'null'  # 如果有'null'值，返回'null'
+                            return None  # 否则返回NaN
+                        return sum(values) / len(values)  # 计算非null值的平均值
+                    
+                    lf_df[f"{k}_sparsity"] = sparsity_df[sparsity_cols].apply(aggregate_sparsity, axis=1)
+                # 如果没有匹配的稀疏度列，不创建该稀疏度列（而不是设置为NaN）
     
     # 创建层次化的列结构
     base_cols = ["input_max_length", "attention", "tag"]
+    
+    # 如果存在稀疏度列，添加到基本列中
+    if 'avg_sparse_ratio' in lf_df.columns:
+        base_cols.append('avg_sparse_ratio')
     
     # 按大类组织列
     organized_cols = base_cols.copy()
@@ -223,9 +268,9 @@ def create_multi_header_csv(df, output_file):
                 else:
                     header2.append("Summary")
             elif major_cat == "LongQA":
-                if "narrativeqa" in task:
-                    header2.append("Narrative")
-                elif "infbench" in task:
+                # if "narrativeqa" in task:  # narrativeqa需要GPT-4评估，已注释
+                #     header2.append("Narrative")
+                if "infbench" in task:
                     header2.append("InfBench")
                 else:
                     header2.append("Summary")
@@ -308,11 +353,11 @@ class arguments:
             "triviaqa": "rag", 
             "hotpotqa": "rag",
             "popqa": "rag",
-            "narrativeqa": "longqa",
+            # "narrativeqa": "longqa",  # 需要GPT-4评估，已注释
             "infbench_qa": "longqa",
             "infbench_choice": "longqa",
-            "infbench_sum": "summ",
-            "multi_lexsum": "summ",
+            # "infbench_sum": "summ",  # 需要GPT-4评估，已注释
+            # "multi_lexsum": "summ",  # 需要GPT-4评估，已注释
             "msmarco_rerank": "rerank",
             "trec": "icl",
             "banking77": "icl",
@@ -334,7 +379,7 @@ class arguments:
                 subdir = "recall"
             elif any(x in self.dataset for x in ["trec", "banking", "clinic", "nlu"]):
                 subdir = "icl"
-            elif any(x in self.dataset for x in ["qa", "narrativeqa", "infbench"]):
+            elif any(x in self.dataset for x in ["qa", "infbench"]):  # 移除narrativeqa
                 subdir = "longqa"
             elif "sum" in self.dataset:
                 subdir = "summ"
@@ -369,31 +414,61 @@ class arguments:
         return None
     
     def get_averaged_metric(self, _auto_eval_attempted=False):
-        path = self.get_path()
-        print(path)
-        if not os.path.exists(path):
-            print("path doesn't exist")
-            # 对于ALCE数据集，尝试查找原始JSON文件并自动运行eval_alce.py
-            if "alce" in self.dataset and path.endswith(".score") and not _auto_eval_attempted:
-                json_path = path.replace(".score", ".json")
-                if os.path.exists(json_path):
-                    print(f"Score file missing but JSON exists: {json_path}")
+        import glob
+        
+        # 使用文件系统搜索找到正确的文件
+        search_pattern = os.path.join(
+            self.output_dir,
+            "*",  # 子目录（recall, rag等）
+            f"{self.dataset}*{self.tag}*{self.input_max_length}*.json.score"
+        )
+        
+        score_files = glob.glob(search_pattern)
+        
+        if not score_files:
+            # 尝试更宽松的搜索模式
+            search_pattern2 = os.path.join(
+                self.output_dir,
+                "*",
+                f"*{self.dataset}*{self.tag}*{self.input_max_length}*.score"
+            )
+            score_files = glob.glob(search_pattern2)
+        
+        if score_files:
+            path = score_files[0]  # 使用第一个匹配的文件
+            print(f"found scores: {path}")
+        else:
+            # 如果没找到.score文件，尝试找.json文件
+            json_pattern = os.path.join(
+                self.output_dir,
+                "*",
+                f"{self.dataset}*{self.tag}*{self.input_max_length}*.json"
+            )
+            json_files = glob.glob(json_pattern)
+            
+            if not json_files:
+                json_pattern2 = os.path.join(
+                    self.output_dir,
+                    "*",
+                    f"*{self.dataset}*{self.tag}*{self.input_max_length}*.json"
+                )
+                json_files = glob.glob(json_pattern2)
+            
+            if json_files:
+                path = json_files[0]
+                print(f"found json: {path}")
+                
+                # 对于ALCE数据集，尝试自动运行eval_alce.py
+                if "alce" in self.dataset and not _auto_eval_attempted:
                     print("Attempting to run eval_alce.py automatically...")
-                    
-                    # 尝试自动运行eval_alce.py
-                    if self._run_eval_alce(json_path):
-                        print("Successfully ran eval_alce.py, checking for score file...")
-                        if os.path.exists(path):
-                            print("Score file now exists, proceeding with normal evaluation")
-                            # 递归调用以使用正常的评估逻辑，标记已经尝试过自动评估
-                            return self.get_averaged_metric(_auto_eval_attempted=True)
-                    
-                    # 如果自动运行失败，直接报错，不退而求其次
-                    print("ERROR: Auto eval_alce.py failed, and score file is required for accurate metrics")
-                    return None
+                    if self._run_eval_alce(path):
+                        return self.get_averaged_metric(_auto_eval_attempted=True)
+                    else:
+                        print("ERROR: Auto eval_alce.py failed")
+                        return None
             else:
-                print("ERROR: Required score file not found and cannot be generated automatically")
-            return None
+                print("path doesn't exist")
+                return None
         
         try:
             with open(path) as f:
@@ -405,7 +480,11 @@ class arguments:
             print(f"Error reading file: {e}")
             return None
         
-        _, metric = self.get_metric_name()
+        metric_config = self.get_metric_name()
+        if metric_config is None:
+            print("metric doesn't exist")
+            return None
+        _, metric = metric_config
         if path.endswith(".score"):
             if any([m not in results for m in metric]):
                 print("metric doesn't exist")
@@ -511,21 +590,52 @@ class arguments:
     
     def get_sparsity_info(self):
         """获取稀疏度信息"""
-        path = self.get_path()
-        if not os.path.exists(path):
+        import glob
+        
+        # 构建搜索模式，基于数据集、tag和输入长度
+        search_pattern = os.path.join(
+            self.output_dir,
+            "*",  # 子目录（recall, rag等）
+            f"{self.dataset}*{self.tag}*{self.input_max_length}*.json.score"
+        )
+        
+        # 搜索匹配的.score文件
+        score_files = glob.glob(search_pattern)
+        
+        if not score_files:
+            # 如果没找到.score文件，尝试不同的模式
+            search_pattern2 = os.path.join(
+                self.output_dir,
+                "*",
+                f"*{self.dataset}*{self.tag}*{self.input_max_length}*.score"
+            )
+            score_files = glob.glob(search_pattern2)
+        
+        if not score_files:
             return None
+            
+        # 使用第一个匹配的文件
+        score_path = score_files[0]
         
         try:
-            with open(path) as f:
+            with open(score_path) as f:
                 results = json.load(f)
             
             # 检查是否有稀疏度信息
             sparsity_info = {}
-            if 'avg_sparse_ratio' in results:
+            if 'avg_sparse_ratio' in results and results['avg_sparse_ratio'] is not None:
                 sparsity_info['avg_sparse_ratio'] = results['avg_sparse_ratio']
+            elif 'avg_sparse_ratio' in results and results['avg_sparse_ratio'] is None:
+                # 对于full attention，稀疏度为null是正常的，返回特殊标记
+                if self.tag == 'full':
+                    sparsity_info['avg_sparse_ratio'] = 'null'  # 用字符串'null'表示full的正常null状态
+                else:
+                    # 对于其他attention类型，稀疏度为null是异常的
+                    print(f"⚠️ 警告: {self.tag} 配置的稀疏度为null: {score_path}")
+                    return None
             
             return sparsity_info if sparsity_info else None
-        except:
+        except Exception as e:
             return None
         
     def get_metric_by_depth(self):
@@ -538,7 +648,10 @@ class arguments:
             results = json.load(f)
 
         output = []        
-        _, metric = self.get_metric_name()
+        metric_config = self.get_metric_name()
+        if metric_config is None:
+            return None
+        _, metric = metric_config
         metric = metric[0]
         keys = ["depth", "k", metric]
         for d in results["data"]:

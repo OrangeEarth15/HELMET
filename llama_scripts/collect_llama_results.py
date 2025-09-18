@@ -45,9 +45,9 @@ def main():
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_threshold0.95"), "attention": "xattn", "threshold": 0.95},
         
-        # # XAttention Single - 对应xattn_single_threshold0.95目录
-        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
-        #  "output_dir": os.path.join(helmet_root, "llama_output", "xattn_single_threshold0.95"), "attention": "xattn_single", "threshold": 0.95},
+        # XAttention Single - 对应xattn_single_threshold0.95目录
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_single_threshold0.95"), "attention": "xattn_single", "threshold": 0.95},
         
         # # XAttention V1 - global selection + v8 layerwise robin
         # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v1_threshold0.95", 
@@ -61,17 +61,17 @@ def main():
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v5_threshold0.95"), "attention": "xattn_v5", "threshold": 0.95},
         
-        # # XAttention Singele V5 - 对应xattn_singele_v5_threshold0.95目录（注意拼写）
-        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
-        #  "output_dir": os.path.join(helmet_root, "llama_output", "xattn_singele_v5_threshold0.95"), "attention": "xattn_singele_v5", "threshold": 0.95},
+        # XAttention Singele V5 - 对应xattn_singele_v5_threshold0.95目录（注意拼写）
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_singele_v5_threshold0.95"), "attention": "xattn_singele_v5", "threshold": 0.95},
         
         # XAttention V6 - 不同threshold
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v6_threshold0.95", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xattn_v6_threshold0.95"), "attention": "xattn_v6", "threshold": 0.95},
         
-        # # XAttention Single V6 - 对应xattn_single_v6_threshold0.95目录
-        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v6_threshold0.95", 
-        #  "output_dir": os.path.join(helmet_root, "llama_output", "xattn_single_v6_threshold0.95"), "attention": "xattn_single_v6", "threshold": 0.95},
+        # XAttention Single V6 - 对应xattn_single_v6_threshold0.95目录
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v6_threshold0.95", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "xattn_single_v6_threshold0.95"), "attention": "xattn_single_v6", "threshold": 0.95},
         
         # XAttention V7 - layer + head robin selection combined
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xattn_v7_threshold0.95", 
@@ -94,12 +94,10 @@ def main():
         {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "llama_xflex_v6_threshold0.95_score0.001", 
          "output_dir": os.path.join(helmet_root, "llama_output", "xflex_v6_threshold0.95_score0.001"), "attention": "xflex_v6", "threshold": 0.95, "score_ratio": 0.001},
         
-        # # 测试目录 - test_xattn_v5_threshold0.95 和 test2_xattn_v5_threshold0.95
-        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
-        #  "output_dir": os.path.join(helmet_root, "llama_output", "test_xattn_v5_threshold0.95"), "attention": "test_xattn_v5", "threshold": 0.95},
-        
-        # {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "xattn_v5_threshold0.95", 
-        #  "output_dir": os.path.join(helmet_root, "llama_output", "test2_xattn_v5_threshold0.95"), "attention": "test2_xattn_v5", "threshold": 0.95},
+        # TriangleMix - 对应llama_tri.sh脚本
+        {"model": "Meta-Llama-3.1-8B-Instruct", "tag": "tri_sparse55", 
+         "output_dir": os.path.join(helmet_root, "llama_output", "tri"), "attention": "tri", "sparse_ratio": 0.55},
+    
     ]
 
     # 📋 数据集配置文件
@@ -180,11 +178,13 @@ def main():
             args.update(dataset)
             
             metric = args.get_averaged_metric()
-            dsimple, mnames = args.get_metric_name()
-
-            if metric is None:
+            metric_config = args.get_metric_name()
+            
+            if metric is None or metric_config is None:
                 failed_paths.append(args.get_path())
                 continue
+                
+            dsimple, mnames = metric_config
                 
             config_found_results += 1
             # 读取稀疏度信息
@@ -238,11 +238,32 @@ def main():
         if 'avg_sparse_ratio' in lf_df.columns:
             preview_cols.append('avg_sparse_ratio')
         
-        # 只添加传统的大类聚合列，不显示详细的层次化列
+        # 添加传统的大类聚合列，并交替显示分数和稀疏度
         available_custom_cols = [col for col in custom_avgs.keys() if col in lf_df.columns]
-        preview_cols.extend(available_custom_cols)
         
-        print(lf_df[preview_cols].to_string(index=False))
+        # 显示分数列和稀疏度列
+        for col in available_custom_cols:
+            preview_cols.append(col)
+            # 添加稀疏度列显示
+            sparsity_col = f"{col}_sparsity"
+            if sparsity_col in lf_df.columns:
+                preview_cols.append(sparsity_col)
+        
+        # 创建一个格式化的DataFrame用于显示
+        display_df = lf_df[preview_cols].copy()
+        
+        # 对分数列和稀疏度列进行格式化
+        for col in display_df.columns:
+            # 稀疏度格式化
+            if '_sparsity' in col or col == 'avg_sparse_ratio':
+                display_df[col] = display_df[col].apply(lambda x: 
+                    "null" if x == 'null' else 
+                    (f"{x:.1%}" if not pd.isna(x) and x != 'null' else "N/A"))
+            elif col in available_custom_cols:
+                # 对分数进行格式化
+                display_df[col] = display_df[col].apply(lambda x: f"{x:.6f}" if not pd.isna(x) else "N/A")
+        
+        print(display_df.to_string(index=False))
         
         # 显示层次化文件信息
         hierarchical_cols = [col for col in lf_df.columns if '|' in col]
